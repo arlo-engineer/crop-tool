@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { processImages } from "@/app/actions/process";
+import { flushImagesToDB, processImages } from "@/app/actions/process";
 import { TEXTS } from "@/lib/constants/text";
 
 export default function ImageProcessingForm() {
@@ -37,6 +37,7 @@ export default function ImageProcessingForm() {
 				});
 
 				await processImages(chunkFormData);
+				console.log(`${i + CHUNK_SIZE} / ${files.length}`);
 			}
 
 			alert(TEXTS.COMPLETE_MESSAGE);
@@ -44,6 +45,7 @@ export default function ImageProcessingForm() {
 			console.error("Error:", error);
 			alert(TEXTS.ERROR_MESSAGE);
 		} finally {
+			await flushImagesToDB(sessionId);
 			setIsProcessing(false);
 		}
 	};
