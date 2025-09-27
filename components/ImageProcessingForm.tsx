@@ -4,6 +4,10 @@ import { useState } from "react";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
+import {
+	createFixedChunks,
+	createSmartChunks,
+} from "@/lib/utils/chunkOptimizer";
 
 export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
@@ -24,8 +28,16 @@ export default function ImageProcessingForm() {
 		const sessionId = crypto.randomUUID();
 
 		try {
-			for (let i = 0; i < files.length; i += CONFIG.CHUNK_SIZE) {
-				const chunk = files.slice(i, i + CONFIG.CHUNK_SIZE);
+			let chunks: File[][];
+			try {
+				chunks = createSmartChunks(files);
+			} catch (error) {
+				console.warn("Falling back to fixed chunks:", error);
+				chunks = createFixedChunks(files, CONFIG.CHUNK_SIZE);
+			}
+
+			for (let i = 0; i < chunks.length; i++) {
+				const chunk = chunks[i];
 				const chunkFormData = new FormData();
 
 				chunkFormData.append("sessionId", sessionId);
@@ -35,7 +47,6 @@ export default function ImageProcessingForm() {
 				});
 
 				await processImages(chunkFormData);
-				console.log(`${i + CONFIG.CHUNK_SIZE} / ${files.length}`);
 			}
 
 			alert(TEXTS.COMPLETE_MESSAGE);
