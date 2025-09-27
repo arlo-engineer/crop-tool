@@ -1,9 +1,9 @@
-import ImageUploader from "@/components/ImageUploader";
+import ImageProcessingForm from "@/components/ImageProcessingForm";
 
 export default function Page() {
 	return (
 		<main>
-			<ImageUploader />
+			<ImageProcessingForm />
 		</main>
 	);
 }
