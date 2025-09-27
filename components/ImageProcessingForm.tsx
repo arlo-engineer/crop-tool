@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
+import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
 
 export default function ImageProcessingForm() {
@@ -16,18 +17,15 @@ export default function ImageProcessingForm() {
 
 		const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
 
-		if (files.length === 0) {
-			alert(TEXTS.SELECT_FILES_MESSAGE);
-			setIsProcessing(false);
+		if (!validateFiles(files, setIsProcessing)) {
 			return;
 		}
 
-		const CHUNK_SIZE = 2;
 		const sessionId = crypto.randomUUID();
 
 		try {
-			for (let i = 0; i < files.length; i += CHUNK_SIZE) {
-				const chunk = files.slice(i, i + CHUNK_SIZE);
+			for (let i = 0; i < files.length; i += CONFIG.CHUNK_SIZE) {
+				const chunk = files.slice(i, i + CONFIG.CHUNK_SIZE);
 				const chunkFormData = new FormData();
 
 				chunkFormData.append("sessionId", sessionId);
@@ -37,7 +35,7 @@ export default function ImageProcessingForm() {
 				});
 
 				await processImages(chunkFormData);
-				console.log(`${i + CHUNK_SIZE} / ${files.length}`);
+				console.log(`${i + CONFIG.CHUNK_SIZE} / ${files.length}`);
 			}
 
 			alert(TEXTS.COMPLETE_MESSAGE);
@@ -65,3 +63,29 @@ export default function ImageProcessingForm() {
 		</form>
 	);
 }
+
+const validateFiles = (
+	files: File[],
+	setIsProcessing: (isProcessing: boolean) => void,
+) => {
+	if (files.length === 0) {
+		alert(TEXTS.SELECT_FILES_MESSAGE);
+		setIsProcessing(false);
+		return false;
+	}
+
+	if (files.length > CONFIG.MAX_FILES) {
+		alert(TEXTS.MAX_FILES_MESSAGE);
+		setIsProcessing(false);
+		return false;
+	}
+
+	const oversizedFile = files.find((file) => file.size > CONFIG.MAX_FILE_SIZE);
+	if (oversizedFile) {
+		alert(TEXTS.MAX_FILE_SIZE_MESSAGE);
+		setIsProcessing(false);
+		return false;
+	}
+
+	return true;
+};
