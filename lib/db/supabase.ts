@@ -19,3 +19,15 @@ export async function saveMultipleImageMetadata(
 
 	if (error) throw error;
 }
+
+// get keys from session id
+export async function getKeysFromSessionId(sessionId: string) {
+	const { data, error } = await supabase
+		.from("images")
+		.select("processed_r2_key, original_name")
+		.eq("session_id", sessionId);
+
+	if (error) throw error;
+
+	return data;
+}

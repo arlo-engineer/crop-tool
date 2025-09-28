@@ -12,4 +12,9 @@ export const TEXTS = {
 	MAX_FILE_SIZE_MESSAGE: `最大${CONFIG.MAX_FILE_SIZE / 1024 / 1024} MBまで選択可能です`,
 	INVALID_FILE_TYPE_MESSAGE:
 		"サポートされていないファイル形式です。JPEG, PNG, GIF, WebP, SVG形式のみ対応しています",
+	ZIP_GENERATION_ERROR_MESSAGE: "ZIP生成に失敗しました",
+	FETCH_FILE_ERROR_MESSAGE: "ファイルの取得に失敗しました",
+	DATABASE_ERROR_MESSAGE: "データベースへの保存に失敗しました",
+	DOWNLOAD_EXPIRED_MESSAGE:
+		"ダウンロードの有効期限が切れました。再度処理を実行してください。",
 } as const;
