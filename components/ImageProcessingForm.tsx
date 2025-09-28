@@ -11,7 +11,7 @@ import {
 	createFixedChunks,
 	createSmartChunks,
 } from "@/lib/utils/chunkOptimizer";
-import { downloadZipFile } from "@/lib/utils/download";
+import { downloadZipFile } from "@/lib/utils/downloadZipFile";
 
 export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
