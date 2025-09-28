@@ -7,5 +7,4 @@ export function downloadZipFile(url: string, filename: string): void {
 	anchor.click();
 
 	document.body.removeChild(anchor);
-	URL.revokeObjectURL(url);
 }

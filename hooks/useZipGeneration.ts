@@ -2,6 +2,7 @@
 
 import JSZip from "jszip";
 import { useState } from "react";
+import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
 
 interface UseZipGenerationReturn {
@@ -43,6 +44,10 @@ export function useZipGeneration(): UseZipGenerationReturn {
 
 			const zipBlob = await zip.generateAsync({ type: "blob" });
 			const downloadUrl = URL.createObjectURL(zipBlob);
+
+			setTimeout(() => {
+				URL.revokeObjectURL(downloadUrl);
+			}, CONFIG.ZIP_DOWNLOAD_URL_EXPIRATION);
 
 			return downloadUrl;
 		} catch (err) {

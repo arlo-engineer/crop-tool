@@ -2,6 +2,7 @@
 
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { CONFIG } from "@/lib/constants/config";
 import { getKeysFromSessionId } from "@/lib/db/supabase";
 import { s3Client } from "@/lib/storage/r2";
 
@@ -17,7 +18,7 @@ export async function getMultipleSignedUrls(sessionId: string) {
 		});
 
 		const url = await getSignedUrl(s3Client, command, {
-			expiresIn: 3600,
+			expiresIn: CONFIG.SIGNED_URL_EXPIRATION,
 		});
 
 		return { url, originalName: key.original_name };

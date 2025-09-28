@@ -15,4 +15,6 @@ export const TEXTS = {
 	ZIP_GENERATION_ERROR_MESSAGE: "ZIP生成に失敗しました",
 	FETCH_FILE_ERROR_MESSAGE: "ファイルの取得に失敗しました",
 	DATABASE_ERROR_MESSAGE: "データベースへの保存に失敗しました",
+	DOWNLOAD_EXPIRED_MESSAGE:
+		"ダウンロードの有効期限が切れました。再度処理を実行してください。",
 } as const;
