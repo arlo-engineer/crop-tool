@@ -6,6 +6,7 @@ import { flushImagesToDB, processImages } from "@/app/actions/process";
 import { useZipGeneration } from "@/hooks/useZipGeneration";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
+import type { ProcessingResult, Result } from "@/lib/types/result";
 import {
 	createFixedChunks,
 	createSmartChunks,
@@ -21,62 +22,31 @@ export default function ImageProcessingForm() {
 		event.preventDefault();
 		setIsProcessing(true);
 
-		const formData = new FormData(event.currentTarget);
-		const allFiles = formData.getAll("files") as File[];
-
-		const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
-
-		if (!validateFiles(files, setIsProcessing)) {
-			return;
+		if (zipUrl) {
+			URL.revokeObjectURL(zipUrl);
+			setZipUrl(null);
 		}
 
-		const sessionId = crypto.randomUUID();
+		const result = await processAndGenerateZip(
+			event.currentTarget,
+			generateZip,
+		);
 
-		try {
-			let chunks: File[][];
-			try {
-				chunks = createSmartChunks(files);
-			} catch (error) {
-				console.warn("Falling back to fixed chunks:", error);
-				chunks = createFixedChunks(files, CONFIG.CHUNK_SIZE);
-			}
-
-			for (let i = 0; i < chunks.length; i++) {
-				const chunk = chunks[i];
-				const chunkFormData = new FormData();
-
-				chunkFormData.append("sessionId", sessionId);
-
-				chunk.forEach((file, index) => {
-					chunkFormData.append(`file-${index}`, file);
-				});
-
-				await processImages(chunkFormData);
-			}
-
+		if (result.success) {
+			setZipUrl(result.data);
 			alert(TEXTS.COMPLETE_MESSAGE);
-		} catch (error) {
-			console.error("Error:", error);
-			alert(TEXTS.ERROR_MESSAGE);
-		} finally {
-			await flushImagesToDB(sessionId);
-			setIsProcessing(false);
-
-			const urls = await getMultipleSignedUrls(sessionId);
-
-			try {
-				const zipUrl = await generateZip(urls);
-				setZipUrl(zipUrl);
-			} catch (error) {
-				console.error("ZIP generation failed:", error);
-				alert(TEXTS.ERROR_MESSAGE);
-			}
+		} else {
+			alert(result.error);
 		}
+
+		setIsProcessing(false);
 	};
 
 	const handleDownload = () => {
 		if (!zipUrl) return;
-		downloadZipFile(zipUrl, "processed-images.zip");
+
+		const fileName = `processed-images-${new Date().toISOString().split("T")[0]}.zip`;
+		downloadZipFile(zipUrl, fileName);
 	};
 
 	return (
@@ -104,27 +74,53 @@ export default function ImageProcessingForm() {
 	);
 }
 
-const validateFiles = (
-	files: File[],
-	setIsProcessing: (isProcessing: boolean) => void,
-) => {
+async function processAndGenerateZip(
+	form: HTMLFormElement,
+	generateZip: (
+		sources: Array<{ url: string; originalName: string }>,
+	) => Promise<string>,
+): Promise<ProcessingResult> {
+	const sessionId = crypto.randomUUID();
+
+	try {
+		const filesResult = extractAndValidateFiles(form);
+		if (!filesResult.success) {
+			return filesResult;
+		}
+
+		await processImagesInChunks(filesResult.data, sessionId);
+
+		await flushImagesToDB(sessionId);
+
+		const urls = await getMultipleSignedUrls(sessionId);
+
+		const zipUrl = await generateZip(urls);
+
+		return { success: true, data: zipUrl };
+	} catch (error) {
+		return {
+			success: false,
+			error: getErrorMessage(error),
+		};
+	}
+}
+
+function extractAndValidateFiles(form: HTMLFormElement): Result<File[]> {
+	const formData = new FormData(form);
+	const allFiles = formData.getAll("files") as File[];
+	const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
+
 	if (files.length === 0) {
-		alert(TEXTS.SELECT_FILES_MESSAGE);
-		setIsProcessing(false);
-		return false;
+		return { success: false, error: TEXTS.SELECT_FILES_MESSAGE };
 	}
 
 	if (files.length > CONFIG.MAX_FILES) {
-		alert(TEXTS.MAX_FILES_MESSAGE);
-		setIsProcessing(false);
-		return false;
+		return { success: false, error: TEXTS.MAX_FILES_MESSAGE };
 	}
 
 	const oversizedFile = files.find((file) => file.size > CONFIG.MAX_FILE_SIZE);
 	if (oversizedFile) {
-		alert(TEXTS.MAX_FILE_SIZE_MESSAGE);
-		setIsProcessing(false);
-		return false;
+		return { success: false, error: TEXTS.MAX_FILE_SIZE_MESSAGE };
 	}
 
 	const invalidTypeFile = files.find(
@@ -134,10 +130,57 @@ const validateFiles = (
 			),
 	);
 	if (invalidTypeFile) {
-		alert(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`);
-		setIsProcessing(false);
-		return false;
+		return {
+			success: false,
+			error: `${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`,
+		};
 	}
 
-	return true;
-};
+	return { success: true, data: files };
+}
+
+async function processImagesInChunks(
+	files: File[],
+	sessionId: string,
+): Promise<void> {
+	let chunks: File[][];
+
+	try {
+		chunks = createSmartChunks(files);
+	} catch (error) {
+		console.warn("Falling back to fixed chunks:", error);
+		chunks = createFixedChunks(files, CONFIG.CHUNK_SIZE);
+	}
+
+	for (let i = 0; i < chunks.length; i++) {
+		const chunk = chunks[i];
+		const chunkFormData = new FormData();
+
+		chunkFormData.append("sessionId", sessionId);
+
+		chunk.forEach((file, index) => {
+			chunkFormData.append(`file-${index}`, file);
+		});
+
+		await processImages(chunkFormData);
+	}
+}
+
+function getErrorMessage(error: unknown): string {
+	if (error instanceof Error) {
+		const lowerMessage = error.message.toLowerCase();
+		if (lowerMessage.includes("zip")) {
+			return TEXTS.ZIP_GENERATION_ERROR_MESSAGE;
+		}
+		if (lowerMessage.includes("fetch")) {
+			return TEXTS.FETCH_FILE_ERROR_MESSAGE;
+		}
+		if (
+			lowerMessage.includes("supabase") ||
+			lowerMessage.includes("database")
+		) {
+			return TEXTS.DATABASE_ERROR_MESSAGE;
+		}
+	}
+	return TEXTS.ERROR_MESSAGE;
+}
