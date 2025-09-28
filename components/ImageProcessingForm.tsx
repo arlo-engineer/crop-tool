@@ -104,7 +104,10 @@ const validateFiles = (
 	}
 
 	const invalidTypeFile = files.find(
-		(file) => !CONFIG.ALLOWED_MIME_TYPES.includes(file.type as any),
+		(file) =>
+			!CONFIG.ALLOWED_MIME_TYPES.includes(
+				file.type as (typeof CONFIG.ALLOWED_MIME_TYPES)[number],
+			),
 	);
 	if (invalidTypeFile) {
 		alert(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`);

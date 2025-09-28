@@ -16,7 +16,11 @@ export async function processImages(formData: FormData) {
 		const files = getFilesFromFormData(formData);
 
 		for (const file of files) {
-			if (!CONFIG.ALLOWED_MIME_TYPES.includes(file.type as any)) {
+			if (
+				!CONFIG.ALLOWED_MIME_TYPES.includes(
+					file.type as (typeof CONFIG.ALLOWED_MIME_TYPES)[number],
+				)
+			) {
 				throw new Error(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${file.name})`);
 			}
 		}

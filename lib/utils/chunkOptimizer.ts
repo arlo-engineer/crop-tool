@@ -29,7 +29,10 @@ export function createSmartChunks(files: File[]): File[][] {
 	return chunks;
 }
 
-export function createFixedChunks(files: File[], chunkSize: number = CONFIG.CHUNK_SIZE): File[][] {
+export function createFixedChunks(
+	files: File[],
+	chunkSize: number = CONFIG.CHUNK_SIZE,
+): File[][] {
 	const chunks: File[][] = [];
 
 	for (let i = 0; i < files.length; i += chunkSize) {
