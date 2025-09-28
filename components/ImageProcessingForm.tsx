@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getMultipleSignedUrls } from "@/app/actions/download";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
@@ -54,13 +55,11 @@ export default function ImageProcessingForm() {
 			console.error("Error:", error);
 			alert(TEXTS.ERROR_MESSAGE);
 		} finally {
-			try {
-				await flushImagesToDB(sessionId);
-				setIsProcessing(false);
-			} catch (error) {
-				console.error("Error:", error);
-				alert(TEXTS.ERROR_MESSAGE);
-			}
+			await flushImagesToDB(sessionId);
+			setIsProcessing(false);
+
+			const urls = await getMultipleSignedUrls(sessionId);
+			console.log(urls);
 		}
 	};
 
