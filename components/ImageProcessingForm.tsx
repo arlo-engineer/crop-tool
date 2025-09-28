@@ -54,8 +54,13 @@ export default function ImageProcessingForm() {
 			console.error("Error:", error);
 			alert(TEXTS.ERROR_MESSAGE);
 		} finally {
-			await flushImagesToDB(sessionId);
-			setIsProcessing(false);
+			try {
+				await flushImagesToDB(sessionId);
+				setIsProcessing(false);
+			} catch (error) {
+				console.error("Error:", error);
+				alert(TEXTS.ERROR_MESSAGE);
+			}
 		}
 	};
 
@@ -94,6 +99,15 @@ const validateFiles = (
 	const oversizedFile = files.find((file) => file.size > CONFIG.MAX_FILE_SIZE);
 	if (oversizedFile) {
 		alert(TEXTS.MAX_FILE_SIZE_MESSAGE);
+		setIsProcessing(false);
+		return false;
+	}
+
+	const invalidTypeFile = files.find(
+		(file) => !CONFIG.ALLOWED_MIME_TYPES.includes(file.type as any),
+	);
+	if (invalidTypeFile) {
+		alert(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`);
 		setIsProcessing(false);
 		return false;
 	}

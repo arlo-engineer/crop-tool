@@ -10,4 +10,5 @@ export const TEXTS = {
 	SELECT_FILES_MESSAGE: "ファイルを選択してください",
 	MAX_FILES_MESSAGE: `最大${CONFIG.MAX_FILES}枚まで選択可能です`,
 	MAX_FILE_SIZE_MESSAGE: `最大${CONFIG.MAX_FILE_SIZE / 1024 / 1024} MBまで選択可能です`,
+	INVALID_FILE_TYPE_MESSAGE: "サポートされていないファイル形式です。JPEG, PNG, GIF, WebP, SVG形式のみ対応しています",
 } as const;

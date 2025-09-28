@@ -1,6 +1,8 @@
 "use server";
 
 import { sessionCache } from "@/lib/cache/sessionCache";
+import { CONFIG } from "@/lib/constants/config";
+import { TEXTS } from "@/lib/constants/text";
 import { saveMultipleImageMetadata } from "@/lib/db/supabase";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { R2PathManager } from "@/lib/storage/r2-path";
@@ -12,6 +14,12 @@ export async function processImages(formData: FormData) {
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
+
+		for (const file of files) {
+			if (!CONFIG.ALLOWED_MIME_TYPES.includes(file.type as any)) {
+				throw new Error(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${file.name})`);
+			}
+		}
 
 		const results = await Promise.all(
 			files.map(async (file) => {
