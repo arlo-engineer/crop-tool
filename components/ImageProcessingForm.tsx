@@ -3,15 +3,19 @@
 import { useState } from "react";
 import { getMultipleSignedUrls } from "@/app/actions/download";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
+import { useZipGeneration } from "@/hooks/useZipGeneration";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
 import {
 	createFixedChunks,
 	createSmartChunks,
 } from "@/lib/utils/chunkOptimizer";
+import { downloadZipFile } from "@/lib/utils/download";
 
 export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [zipUrl, setZipUrl] = useState<string | null>(null);
+	const { generateZip, isGenerating } = useZipGeneration();
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -59,23 +63,44 @@ export default function ImageProcessingForm() {
 			setIsProcessing(false);
 
 			const urls = await getMultipleSignedUrls(sessionId);
-			console.log(urls);
+
+			try {
+				const zipUrl = await generateZip(urls);
+				setZipUrl(zipUrl);
+			} catch (error) {
+				console.error("ZIP generation failed:", error);
+				alert(TEXTS.ERROR_MESSAGE);
+			}
 		}
 	};
 
+	const handleDownload = () => {
+		if (!zipUrl) return;
+		downloadZipFile(zipUrl, "processed-images.zip");
+	};
+
 	return (
-		<form onSubmit={handleSubmit}>
-			<input
-				type="file"
-				name="files"
-				multiple
-				accept="image/*"
-				disabled={isProcessing}
-			/>
-			<button type="submit" disabled={isProcessing}>
-				{isProcessing ? TEXTS.PROCESSING : TEXTS.PROCESS_START}
-			</button>
-		</form>
+		<>
+			<form onSubmit={handleSubmit}>
+				<input
+					type="file"
+					name="files"
+					multiple
+					accept="image/*"
+					disabled={isProcessing || isGenerating}
+				/>
+				<button type="submit" disabled={isProcessing || isGenerating}>
+					{isProcessing || isGenerating
+						? TEXTS.PROCESSING
+						: TEXTS.PROCESS_START}
+				</button>
+			</form>
+			{zipUrl && (
+				<button type="button" onClick={handleDownload}>
+					Download ZIP
+				</button>
+			)}
+		</>
 	);
 }
 
