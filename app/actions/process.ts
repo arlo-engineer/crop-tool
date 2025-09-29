@@ -7,6 +7,10 @@ import { saveMultipleImageMetadata } from "@/lib/db/supabase";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { R2PathManager } from "@/lib/storage/r2-path";
 import type { ImageStatus } from "@/lib/types/database";
+import {
+	processImage,
+	validateImageBuffer,
+} from "@/lib/utils/imageProcessor";
 
 export async function processImages(formData: FormData) {
 	try {
@@ -30,11 +34,22 @@ export async function processImages(formData: FormData) {
 				const arrayBuffer = await file.arrayBuffer();
 				const imageBuffer = Buffer.from(arrayBuffer);
 
-				// add processing
-				const processedBuffer = imageBuffer;
+				const isValid = await validateImageBuffer(imageBuffer);
+				if (!isValid) {
+					throw new Error(
+						`${TEXTS.INVALID_IMAGE_BUFFER_MESSAGE}\n(${file.name})`,
+					);
+				}
+
+				const processedBuffer = await processImage(imageBuffer);
 
 				const r2Key = pathManager.getProcessedImagePath(sessionId, file.name);
-				await uploadToR2(r2Key, processedBuffer, file.type);
+
+				await uploadToR2(
+					r2Key,
+					processedBuffer,
+					`image/${CONFIG.IMAGE_PROCESSING.FORMAT}`,
+				);
 
 				return {
 					session_id: sessionId,
@@ -45,7 +60,6 @@ export async function processImages(formData: FormData) {
 			}),
 		);
 
-		// save to cache
 		await sessionCache.addImage(sessionId, results);
 
 		return {
@@ -57,7 +71,6 @@ export async function processImages(formData: FormData) {
 		const sessionId = formData.get("sessionId") as string;
 		const files = getFilesFromFormData(formData);
 
-		// save to cache
 		await sessionCache.addImage(
 			sessionId,
 			files.map((file: File) => ({
