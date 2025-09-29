@@ -1,6 +1,8 @@
 import { CONFIG } from "./config";
 
 export const TEXTS = {
+	OUTPUT_FORMAT_MESSAGE: "出力フォーマット",
+	OUTPUT_FORMAT_ORIGINAL: "元のフォーマットを維持",
 	COMPLETE_MESSAGE: "すべての画像の処理が完了しました",
 	ERROR_MESSAGE: "処理中にエラーが発生しました",
 

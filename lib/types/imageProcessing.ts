@@ -28,3 +28,5 @@ export interface ImageProcessingOptions {
 	quality?: number;
 	format?: "jpeg" | "png" | "webp";
 }
+
+export type OutputFormat = "jpeg" | "png" | "webp" | "original";

@@ -7,7 +7,9 @@ import { saveMultipleImageMetadata } from "@/lib/db/supabase";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { R2PathManager } from "@/lib/storage/r2-path";
 import type { ImageStatus } from "@/lib/types/database";
+import type { OutputFormat } from "@/lib/types/imageProcessing";
 import {
+	getImageMetadata,
 	processImage,
 	validateImageBuffer,
 } from "@/lib/utils/imageProcessor";
@@ -15,6 +17,7 @@ import {
 export async function processImages(formData: FormData) {
 	try {
 		const sessionId = formData.get("sessionId") as string;
+		const outputFormat = (formData.get("outputFormat") as OutputFormat) || "original";
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -41,14 +44,31 @@ export async function processImages(formData: FormData) {
 					);
 				}
 
-				const processedBuffer = await processImage(imageBuffer);
+				const metadata = await getImageMetadata(imageBuffer);
 
-				const r2Key = pathManager.getProcessedImagePath(sessionId, file.name);
+				const actualFormat: "jpeg" | "png" | "webp" =
+					outputFormat === "original"
+						? (metadata.format as "jpeg" | "png" | "webp")
+						: outputFormat;
+
+				const processedBuffer = await processImage(imageBuffer, {
+					resize: {
+						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
+						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
+						format: actualFormat,
+					},
+				});
+
+				const processedFileName = file.name.replace(/\.[^/.]+$/, `.${actualFormat}`);
+				console.log("processedFileName", processedFileName);
+				const r2Key = pathManager.getProcessedImagePath(sessionId, processedFileName);
 
 				await uploadToR2(
 					r2Key,
 					processedBuffer,
-					`image/${CONFIG.IMAGE_PROCESSING.FORMAT}`,
+					`image/${actualFormat}`,
 				);
 
 				return {
@@ -60,7 +80,7 @@ export async function processImages(formData: FormData) {
 			}),
 		);
 
-		await sessionCache.addImage(sessionId, results);
+		sessionCache.addImage(sessionId, results);
 
 		return {
 			success: true,
@@ -71,7 +91,7 @@ export async function processImages(formData: FormData) {
 		const sessionId = formData.get("sessionId") as string;
 		const files = getFilesFromFormData(formData);
 
-		await sessionCache.addImage(
+		sessionCache.addImage(
 			sessionId,
 			files.map((file: File) => ({
 				session_id: sessionId,
@@ -100,7 +120,7 @@ function getFilesFromFormData(formData: FormData) {
 }
 
 export async function flushImagesToDB(sessionId: string) {
-	const metadata = await sessionCache.getImages(sessionId);
+	const metadata = sessionCache.getImages(sessionId);
 
 	if (metadata.length === 0) return;
 
@@ -114,5 +134,5 @@ export async function flushImagesToDB(sessionId: string) {
 		})),
 	);
 
-	await sessionCache.clearImages(sessionId);
+	sessionCache.clearImages(sessionId);
 }
