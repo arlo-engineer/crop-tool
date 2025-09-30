@@ -6,7 +6,7 @@ import { TEXTS } from "@/lib/constants/text";
 import { saveMultipleImageMetadata } from "@/lib/db/supabase";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { R2PathManager } from "@/lib/storage/r2-path";
-import type { ImageStatus } from "@/lib/types/database";
+import type { ImageStatus, UploadedImageMetadata } from "@/lib/types/database";
 import type { OutputFormat } from "@/lib/types/imageProcessing";
 import {
 	getImageMetadata,
@@ -74,13 +74,14 @@ export async function processImages(formData: FormData) {
 				return {
 					session_id: sessionId,
 					original_name: file.name,
+					processed_name: processedFileName,
 					processed_r2_key: r2Key,
 					status: "completed" as ImageStatus,
-				};
+				} as UploadedImageMetadata;
 			}),
 		);
 
-		sessionCache.addImage(sessionId, results);
+		sessionCache.addImage(sessionId, results as UploadedImageMetadata[]);
 
 		return {
 			success: true,
@@ -96,10 +97,11 @@ export async function processImages(formData: FormData) {
 			files.map((file: File) => ({
 				session_id: sessionId,
 				original_name: file.name,
+				processed_name: "",
 				processed_r2_key: "",
 				status: "error" as ImageStatus,
 				error_message: error instanceof Error ? error.message : "Unknown error",
-			})),
+			} as UploadedImageMetadata)),
 		);
 
 		return {
@@ -128,6 +130,7 @@ export async function flushImagesToDB(sessionId: string) {
 		metadata.map((image) => ({
 			session_id: image.session_id,
 			original_name: image.original_name,
+			processed_name: image.processed_name,
 			processed_r2_key: image.processed_r2_key,
 			status: image.status,
 			...(image.error_message && { error_message: image.error_message }),

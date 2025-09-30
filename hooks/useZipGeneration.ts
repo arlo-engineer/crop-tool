@@ -13,7 +13,7 @@ interface UseZipGenerationReturn {
 
 interface ZipSource {
 	url: string;
-	originalName: string;
+	processedName: string;
 }
 
 export function useZipGeneration(): UseZipGenerationReturn {
@@ -31,7 +31,7 @@ export function useZipGeneration(): UseZipGenerationReturn {
 					throw new Error(`Failed to fetch file: ${response.statusText}`);
 				}
 				const blob = await response.blob();
-				const fileName = source.originalName;
+				const fileName = source.processedName;
 				return { fileName, blob };
 			});
 

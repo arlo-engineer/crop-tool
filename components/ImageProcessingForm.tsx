@@ -98,7 +98,7 @@ export default function ImageProcessingForm() {
 async function processAndGenerateZip(
 	form: HTMLFormElement,
 	generateZip: (
-		sources: Array<{ url: string; originalName: string }>,
+		sources: Array<{ url: string; processedName: string }>,
 	) => Promise<string>,
 	outputFormat: OutputFormat,
 ): Promise<ProcessingResult> {
