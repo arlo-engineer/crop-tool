@@ -31,19 +31,3 @@ export async function uploadToR2(
 
 	await s3Client.send(command);
 }
-
-// export async function getFromR2(key: string): Promise<Buffer> {
-// 	const command = new GetObjectCommand({
-// 		Bucket: process.env.R2_BUCKET_NAME,
-// 		Key: key,
-// 	});
-
-// 	const response = await s3Client.send(command);
-// 	const chunks: Uint8Array[] = [];
-
-// 	for await (const chunk of response.Body ) {
-// 		chunks.push(chunk);
-// 	}
-
-// 	return Buffer.concat(chunks);
-// }

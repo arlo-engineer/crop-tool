@@ -19,9 +19,6 @@ export async function processImages(formData: FormData) {
 		const sessionId = formData.get("sessionId") as string;
 		const outputFormat =
 			(formData.get("outputFormat") as OutputFormat) || "original";
-		const cropStrategy =
-			(formData.get("cropStrategy") as "center" | "custom" | "person") ||
-			"center";
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -55,31 +52,20 @@ export async function processImages(formData: FormData) {
 						? (metadata.format as "jpeg" | "png" | "webp")
 						: outputFormat;
 
-				const processingOptions =
-					cropStrategy === "person"
-						? {
-							crop: {
-								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
-								strategy: "person" as const,
-							},
-							resize: {
-								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
-								fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
-								quality: CONFIG.IMAGE_PROCESSING.QUALITY,
-								format: actualFormat,
-							},
-						}
-						: {
-							resize: {
-								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
-								fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
-								quality: CONFIG.IMAGE_PROCESSING.QUALITY,
-								format: actualFormat,
-							},
-						};
+				const processingOptions = {
+					crop: {
+						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						strategy: "person" as const,
+					},
+					resize: {
+						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
+						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
+						format: actualFormat,
+					},
+				}
 
 				const processedBuffer = await processImage(
 					imageBuffer,
