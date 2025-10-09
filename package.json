@@ -13,6 +13,8 @@
 		"@aws-sdk/s3-request-presigner": "^3.894.0",
 		"@supabase/ssr": "^0.7.0",
 		"@supabase/supabase-js": "^2.58.0",
+		"@tensorflow-models/coco-ssd": "^2.2.3",
+		"@tensorflow/tfjs-node": "^4.22.0",
 		"jszip": "^3.10.1",
 		"next": "15.5.3",
 		"react": "19.1.0",

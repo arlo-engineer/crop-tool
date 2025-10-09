@@ -23,4 +23,10 @@ export const CONFIG = {
         RESIZE_FIT: "cover" as const,
         SUPPORTED_FORMATS: ["jpeg", "png", "webp"] as const,
     },
+
+    PERSON_DETECTION: {
+        MIN_SCORE: 0.5,
+        TIMEOUT_MS: 10000,
+        FALLBACK_FIT: "contain" as const,
+    },
 } as const;

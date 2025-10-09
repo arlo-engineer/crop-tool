@@ -17,7 +17,11 @@ import {
 export async function processImages(formData: FormData) {
 	try {
 		const sessionId = formData.get("sessionId") as string;
-		const outputFormat = (formData.get("outputFormat") as OutputFormat) || "original";
+		const outputFormat =
+			(formData.get("outputFormat") as OutputFormat) || "original";
+		const cropStrategy =
+			(formData.get("cropStrategy") as "center" | "custom" | "person") ||
+			"center";
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -51,25 +55,47 @@ export async function processImages(formData: FormData) {
 						? (metadata.format as "jpeg" | "png" | "webp")
 						: outputFormat;
 
-				const processedBuffer = await processImage(imageBuffer, {
-					resize: {
-						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
-						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
-						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
-						format: actualFormat,
-					},
-				});
+				const processingOptions =
+					cropStrategy === "person"
+						? {
+							crop: {
+								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+								strategy: "person" as const,
+							},
+							resize: {
+								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+								fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
+								quality: CONFIG.IMAGE_PROCESSING.QUALITY,
+								format: actualFormat,
+							},
+						}
+						: {
+							resize: {
+								width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+								height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+								fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
+								quality: CONFIG.IMAGE_PROCESSING.QUALITY,
+								format: actualFormat,
+							},
+						};
 
-				const processedFileName = file.name.replace(/\.[^/.]+$/, `.${actualFormat}`);
-				console.log("processedFileName", processedFileName);
-				const r2Key = pathManager.getProcessedImagePath(sessionId, processedFileName);
-
-				await uploadToR2(
-					r2Key,
-					processedBuffer,
-					`image/${actualFormat}`,
+				const processedBuffer = await processImage(
+					imageBuffer,
+					processingOptions,
 				);
+
+				const processedFileName = file.name.replace(
+					/\.[^/.]+$/,
+					`.${actualFormat}`,
+				);
+				const r2Key = pathManager.getProcessedImagePath(
+					sessionId,
+					processedFileName,
+				);
+
+				await uploadToR2(r2Key, processedBuffer, `image/${actualFormat}`);
 
 				return {
 					session_id: sessionId,
@@ -94,14 +120,18 @@ export async function processImages(formData: FormData) {
 
 		sessionCache.addImage(
 			sessionId,
-			files.map((file: File) => ({
-				session_id: sessionId,
-				original_name: file.name,
-				processed_name: "",
-				processed_r2_key: "",
-				status: "error" as ImageStatus,
-				error_message: error instanceof Error ? error.message : "Unknown error",
-			} as UploadedImageMetadata)),
+			files.map(
+				(file: File) =>
+					({
+						session_id: sessionId,
+						original_name: file.name,
+						processed_name: "",
+						processed_r2_key: "",
+						status: "error" as ImageStatus,
+						error_message:
+							error instanceof Error ? error.message : "Unknown error",
+					}) as UploadedImageMetadata,
+			),
 		);
 
 		return {

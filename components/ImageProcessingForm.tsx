@@ -18,8 +18,12 @@ export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [zipUrl, setZipUrl] = useState<string | null>(null);
 	const [outputFormat, setOutputFormat] = useState<OutputFormat>("original");
+	const [cropStrategy, setCropStrategy] = useState<"center" | "person">(
+		"center",
+	);
 	const { generateZip, isGenerating } = useZipGeneration();
 	const outputFormatId = useId();
+	const cropStrategyId = useId();
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -34,6 +38,7 @@ export default function ImageProcessingForm() {
 			event.currentTarget,
 			generateZip,
 			outputFormat,
+			cropStrategy,
 		);
 
 		if (result.success) {
@@ -80,6 +85,21 @@ export default function ImageProcessingForm() {
 						<option value="webp">WebP</option>
 					</select>
 				</div>
+				<div>
+					<label htmlFor={cropStrategyId}>クロップ戦略: </label>
+					<select
+						id={cropStrategyId}
+						name="cropStrategy"
+						value={cropStrategy}
+						onChange={(e) =>
+							setCropStrategy(e.target.value as "center" | "person")
+						}
+						disabled={isProcessing || isGenerating}
+					>
+						<option value="center">中央</option>
+						<option value="person">人物検知</option>
+					</select>
+				</div>
 				<button type="submit" disabled={isProcessing || isGenerating}>
 					{isProcessing || isGenerating
 						? TEXTS.PROCESSING
@@ -101,6 +121,7 @@ async function processAndGenerateZip(
 		sources: Array<{ url: string; processedName: string }>,
 	) => Promise<string>,
 	outputFormat: OutputFormat,
+	cropStrategy: "center" | "person",
 ): Promise<ProcessingResult> {
 	const sessionId = crypto.randomUUID();
 
@@ -110,7 +131,12 @@ async function processAndGenerateZip(
 			return filesResult;
 		}
 
-		await processImagesInChunks(filesResult.data, sessionId, outputFormat);
+		await processImagesInChunks(
+			filesResult.data,
+			sessionId,
+			outputFormat,
+			cropStrategy,
+		);
 
 		await flushImagesToDB(sessionId);
 
@@ -165,6 +191,7 @@ async function processImagesInChunks(
 	files: File[],
 	sessionId: string,
 	outputFormat: OutputFormat,
+	cropStrategy: "center" | "person",
 ): Promise<void> {
 	let chunks: File[][];
 
@@ -181,6 +208,7 @@ async function processImagesInChunks(
 
 		chunkFormData.append("sessionId", sessionId);
 		chunkFormData.append("outputFormat", outputFormat);
+		chunkFormData.append("cropStrategy", cropStrategy);
 
 		chunk.forEach((file, index) => {
 			chunkFormData.append(`file-${index}`, file);

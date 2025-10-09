@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
 			bodySizeLimit: "4mb",
 		},
 	},
+	webpack: (config, { isServer }) => {
+		if (isServer) {
+			config.externals = config.externals || [];
+			config.externals.push({
+				"@tensorflow/tfjs-node": "commonjs @tensorflow/tfjs-node",
+			});
+		}
+		return config;
+	},
 };
 
 export default nextConfig;

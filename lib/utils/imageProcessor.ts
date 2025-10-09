@@ -6,6 +6,7 @@ import type {
 	ImageProcessingOptions,
 	ResizeOptions,
 } from "@/lib/types/imageProcessing";
+import { detectPerson } from "./personDetector";
 
 export async function getImageMetadata(buffer: Buffer): Promise<ImageMetadata> {
 	const metadata = await sharp(buffer).metadata();
@@ -64,9 +65,79 @@ export async function cropImage(
 	const { width, height, left, top, strategy = "center" } = options;
 
 	let sharpInstance = sharp(buffer);
+	const metadata = await getImageMetadata(buffer);
 
-	if (strategy === "center") {
-		const metadata = await getImageMetadata(buffer);
+	if (strategy === "person") {
+		const personResult = await detectPerson(
+			buffer,
+			CONFIG.PERSON_DETECTION.MIN_SCORE,
+		);
+
+		if (personResult) {
+			// Person detected - calculate crop area to maintain target aspect ratio
+			const [x, y, personWidth, personHeight] = personResult.bbox;
+			const personCenterX = x + personWidth / 2;
+			const personCenterY = y + personHeight / 2;
+
+			const targetAspectRatio = width / height;
+			const imageAspectRatio = metadata.width / metadata.height;
+
+			let cropWidth: number;
+			let cropHeight: number;
+
+			// Calculate crop dimensions to match target aspect ratio
+			if (imageAspectRatio > targetAspectRatio) {
+				// Image is wider - crop width
+				cropHeight = metadata.height;
+				cropWidth = Math.floor(cropHeight * targetAspectRatio);
+			} else {
+				// Image is taller - crop height
+				cropWidth = metadata.width;
+				cropHeight = Math.floor(cropWidth / targetAspectRatio);
+			}
+
+			// Center crop area on person
+			let cropLeft = Math.floor(personCenterX - cropWidth / 2);
+			let cropTop = Math.floor(personCenterY - cropHeight / 2);
+
+			// Adjust if crop area exceeds image boundaries
+			cropLeft = Math.max(0, Math.min(cropLeft, metadata.width - cropWidth));
+			cropTop = Math.max(0, Math.min(cropTop, metadata.height - cropHeight));
+
+			sharpInstance = sharpInstance.extract({
+				left: cropLeft,
+				top: cropTop,
+				width: cropWidth,
+				height: cropHeight,
+			});
+		} else {
+			// No person detected - use center crop strategy as fallback
+			console.log("No person detected, falling back to center crop");
+			const targetAspectRatio = width / height;
+			const imageAspectRatio = metadata.width / metadata.height;
+
+			let cropWidth: number;
+			let cropHeight: number;
+
+			if (imageAspectRatio > targetAspectRatio) {
+				cropHeight = metadata.height;
+				cropWidth = Math.floor(cropHeight * targetAspectRatio);
+			} else {
+				cropWidth = metadata.width;
+				cropHeight = Math.floor(cropWidth / targetAspectRatio);
+			}
+
+			const cropLeft = Math.max(0, Math.floor((metadata.width - cropWidth) / 2));
+			const cropTop = Math.max(0, Math.floor((metadata.height - cropHeight) / 2));
+
+			sharpInstance = sharpInstance.extract({
+				left: cropLeft,
+				top: cropTop,
+				width: cropWidth,
+				height: cropHeight,
+			});
+		}
+	} else if (strategy === "center") {
 		const cropLeft = Math.max(0, Math.floor((metadata.width - width) / 2));
 		const cropTop = Math.max(0, Math.floor((metadata.height - height) / 2));
 

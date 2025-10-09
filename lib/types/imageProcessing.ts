@@ -19,7 +19,7 @@ export interface CropOptions {
 	height: number;
 	left?: number;
 	top?: number;
-	strategy?: "center" | "custom";
+	strategy?: "center" | "custom" | "person";
 }
 
 export interface ImageProcessingOptions {
