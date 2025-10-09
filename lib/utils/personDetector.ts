@@ -9,16 +9,11 @@ export interface PersonDetectionResult {
 	score: number;
 }
 
-/**
- * Load and cache the COCO-SSD model
- * Uses dynamic import to avoid Next.js webpack bundling issues
- */
 async function loadModel(): Promise<cocoSsd.ObjectDetection> {
 	if (modelCache) {
 		return modelCache;
 	}
 
-	// Dynamic import to avoid Next.js webpack issues with tfjs-node
 	const [_tf, cocoSsdModule] = await Promise.all([
 		import("@tensorflow/tfjs-node"),
 		import("@tensorflow-models/coco-ssd"),
@@ -31,32 +26,25 @@ async function loadModel(): Promise<cocoSsd.ObjectDetection> {
 	return modelCache;
 }
 
-/**
- * Convert Sharp buffer to TensorFlow.js tensor
- */
 async function bufferToTensor(
 	buffer: Buffer,
 	tf: typeof import("@tensorflow/tfjs-node"),
 ): Promise<{ tensor: tf.Tensor3D; width: number; height: number }> {
-	// Get image metadata and raw pixel data
 	const image = sharp(buffer);
 	const { data, info } = await image
 		.raw()
 		.ensureAlpha()
 		.toBuffer({ resolveWithObject: true });
 
-	// Convert raw buffer to tensor (RGBA format)
 	const tensor = tf.tensor3d(new Uint8Array(data), [
 		info.height,
 		info.width,
 		info.channels,
 	]);
 
-	// Remove alpha channel if present (COCO-SSD expects RGB)
 	const rgbTensor =
 		info.channels === 4 ? tensor.slice([0, 0, 0], [-1, -1, 3]) : tensor;
 
-	// Clean up intermediate tensor
 	if (info.channels === 4) {
 		tensor.dispose();
 	}
@@ -68,11 +56,6 @@ async function bufferToTensor(
 	};
 }
 
-/**
- * Detect person in image buffer using COCO-SSD
- * Returns the bounding box of the person with highest confidence score
- * Returns null if no person is detected above the minimum score threshold
- */
 export async function detectPerson(
 	buffer: Buffer,
 	minScore = 0.5,
@@ -86,10 +69,8 @@ export async function detectPerson(
 		const { tensor: imageTensor } = await bufferToTensor(buffer, tfModule);
 		tensor = imageTensor;
 
-		// Detect objects
 		const predictions = await model.detect(tensor);
 
-		// Filter for person class and find highest confidence
 		const personPredictions = predictions
 			.filter((pred) => pred.class === "person" && pred.score >= minScore)
 			.sort((a, b) => b.score - a.score);
@@ -105,7 +86,6 @@ export async function detectPerson(
 			score: bestPerson.score,
 		};
 	} finally {
-		// Clean up tensor to prevent memory leak
 		if (tensor) {
 			tensor.dispose();
 		}
