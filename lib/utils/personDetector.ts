@@ -63,6 +63,8 @@ export async function detectPerson(
 	let tensor: tf.Tensor3D | null = null;
 
 	try {
+		// Try to load TensorFlow.js Node
+		// If it fails (e.g., in Docker Alpine), person detection will be disabled
 		const tfModule = await import("@tensorflow/tfjs-node");
 
 		const model = await loadModel();
@@ -85,6 +87,14 @@ export async function detectPerson(
 			bbox: bestPerson.bbox as [number, number, number, number],
 			score: bestPerson.score,
 		};
+	} catch (error) {
+		// TensorFlow.js Node failed to load (e.g., ERR_DLOPEN_FAILED in Alpine Docker)
+		// Person detection is not available, return null to skip it
+		console.warn(
+			"TensorFlow.js Node is not available. Person detection is disabled.",
+			error instanceof Error ? error.message : error,
+		);
+		return null;
 	} finally {
 		if (tensor) {
 			tensor.dispose();
