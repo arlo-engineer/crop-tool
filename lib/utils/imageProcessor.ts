@@ -120,8 +120,14 @@ export async function cropImage(
 				cropHeight = Math.floor(cropWidth / targetAspectRatio);
 			}
 
-			const cropLeft = Math.max(0, Math.floor((metadata.width - cropWidth) / 2));
-			const cropTop = Math.max(0, Math.floor((metadata.height - cropHeight) / 2));
+			const cropLeft = Math.max(
+				0,
+				Math.floor((metadata.width - cropWidth) / 2),
+			);
+			const cropTop = Math.max(
+				0,
+				Math.floor((metadata.height - cropHeight) / 2),
+			);
 
 			sharpInstance = sharpInstance.extract({
 				left: cropLeft,

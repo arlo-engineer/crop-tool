@@ -1,4 +1,4 @@
-.PHONY: init up down build
+.PHONY: init up down build check
 
 init:
 	docker compose --profile dev build dev
@@ -19,3 +19,6 @@ down:
 build:
 	docker build --target runner -t crop-tool:latest .
 	@echo "Production image built"
+
+check:
+	docker compose --profile dev exec dev npm run check
