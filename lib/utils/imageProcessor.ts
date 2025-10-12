@@ -29,6 +29,32 @@ export async function validateImageBuffer(buffer: Buffer): Promise<boolean> {
 	}
 }
 
+function calculateCropDimensions(
+	imageWidth: number,
+	imageHeight: number,
+	targetWidth: number,
+	targetHeight: number,
+): { cropWidth: number; cropHeight: number } {
+	const targetAspectRatio = targetWidth / targetHeight;
+	const imageAspectRatio = imageWidth / imageHeight;
+
+	let cropWidth: number;
+	let cropHeight: number;
+
+	if (imageAspectRatio > targetAspectRatio) {
+		cropHeight = imageHeight;
+		cropWidth = Math.floor(cropHeight * targetAspectRatio);
+	} else {
+		cropWidth = imageWidth;
+		cropHeight = Math.floor(cropWidth / targetAspectRatio);
+	}
+
+	cropWidth = Math.min(cropWidth, imageWidth);
+	cropHeight = Math.min(cropHeight, imageHeight);
+
+	return { cropWidth, cropHeight };
+}
+
 export async function resizeImage(
 	buffer: Buffer,
 	options: ResizeOptions,
@@ -62,96 +88,51 @@ export async function cropImage(
 	buffer: Buffer,
 	options: CropOptions,
 ): Promise<Buffer> {
-	const { width, height, left, top, strategy = "center" } = options;
+	const { width, height } = options;
 
 	let sharpInstance = sharp(buffer);
 	const metadata = await getImageMetadata(buffer);
 
-	if (strategy === "person") {
-		const personResult = await detectPerson(
-			buffer,
-			CONFIG.PERSON_DETECTION.MIN_SCORE,
-		);
+	const personResult = await detectPerson(
+		buffer,
+		CONFIG.PERSON_DETECTION.MIN_SCORE,
+	);
 
-		if (personResult) {
-			const [x, y, personWidth, personHeight] = personResult.bbox;
-			const personCenterX = x + personWidth / 2;
-			const personCenterY = y + personHeight / 2;
+	const { cropWidth, cropHeight } = calculateCropDimensions(
+		metadata.width,
+		metadata.height,
+		width,
+		height,
+	);
 
-			const targetAspectRatio = width / height;
-			const imageAspectRatio = metadata.width / metadata.height;
+	if (personResult) {
+		const [x, y, personWidth, personHeight] = personResult.bbox;
+		const personCenterX = x + personWidth / 2;
+		const personCenterY = y + personHeight / 2;
 
-			let cropWidth: number;
-			let cropHeight: number;
+		let cropLeft = Math.floor(personCenterX - cropWidth / 2);
+		let cropTop = Math.floor(personCenterY - cropHeight / 2);
 
-			if (imageAspectRatio > targetAspectRatio) {
-				cropHeight = metadata.height;
-				cropWidth = Math.floor(cropHeight * targetAspectRatio);
-			} else {
-				cropWidth = metadata.width;
-				cropHeight = Math.floor(cropWidth / targetAspectRatio);
-			}
-
-			let cropLeft = Math.floor(personCenterX - cropWidth / 2);
-			let cropTop = Math.floor(personCenterY - cropHeight / 2);
-
-			cropLeft = Math.max(0, Math.min(cropLeft, metadata.width - cropWidth));
-			cropTop = Math.max(0, Math.min(cropTop, metadata.height - cropHeight));
-
-			sharpInstance = sharpInstance.extract({
-				left: cropLeft,
-				top: cropTop,
-				width: cropWidth,
-				height: cropHeight,
-			});
-		} else {
-			console.log("No person detected, falling back to center crop");
-			const targetAspectRatio = width / height;
-			const imageAspectRatio = metadata.width / metadata.height;
-
-			let cropWidth: number;
-			let cropHeight: number;
-
-			if (imageAspectRatio > targetAspectRatio) {
-				cropHeight = metadata.height;
-				cropWidth = Math.floor(cropHeight * targetAspectRatio);
-			} else {
-				cropWidth = metadata.width;
-				cropHeight = Math.floor(cropWidth / targetAspectRatio);
-			}
-
-			const cropLeft = Math.max(
-				0,
-				Math.floor((metadata.width - cropWidth) / 2),
-			);
-			const cropTop = Math.max(
-				0,
-				Math.floor((metadata.height - cropHeight) / 2),
-			);
-
-			sharpInstance = sharpInstance.extract({
-				left: cropLeft,
-				top: cropTop,
-				width: cropWidth,
-				height: cropHeight,
-			});
-		}
-	} else if (strategy === "center") {
-		const cropLeft = Math.max(0, Math.floor((metadata.width - width) / 2));
-		const cropTop = Math.max(0, Math.floor((metadata.height - height) / 2));
+		cropLeft = Math.max(0, Math.min(cropLeft, metadata.width - cropWidth));
+		cropTop = Math.max(0, Math.min(cropTop, metadata.height - cropHeight));
 
 		sharpInstance = sharpInstance.extract({
 			left: cropLeft,
 			top: cropTop,
-			width: Math.min(width, metadata.width),
-			height: Math.min(height, metadata.height),
+			width: cropWidth,
+			height: cropHeight,
 		});
-	} else if (strategy === "custom" && left !== undefined && top !== undefined) {
+	} else {
+		console.warn("No person detected, falling back to center crop");
+
+		const cropLeft = Math.max(0, Math.floor((metadata.width - cropWidth) / 2));
+		const cropTop = Math.max(0, Math.floor((metadata.height - cropHeight) / 2));
+
 		sharpInstance = sharpInstance.extract({
-			left,
-			top,
-			width,
-			height,
+			left: cropLeft,
+			top: cropTop,
+			width: cropWidth,
+			height: cropHeight,
 		});
 	}
 
