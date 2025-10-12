@@ -3,7 +3,7 @@
 init:
 	docker compose --profile dev build dev
 	@echo "Creating temporary container to copy node_modules..."
-	docker run --rm -v $(PWD):/host crop-tool-dev sh -c "cp -r /app/node_modules /host/"
+	docker run --rm -v $(PWD):/host crop-tool-dev sh -c "rm -rf /host/node_modules && cp -r /app/node_modules /host/"
 	@echo "Setup complete"
 
 up:
