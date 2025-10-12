@@ -85,6 +85,12 @@ export async function detectPerson(
 			bbox: bestPerson.bbox as [number, number, number, number],
 			score: bestPerson.score,
 		};
+	} catch (error) {
+		console.warn(
+			"TensorFlow.js Node is not available. Person detection is disabled.",
+			error instanceof Error ? error.message : error,
+		);
+		return null;
 	} finally {
 		if (tensor) {
 			tensor.dispose();

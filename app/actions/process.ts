@@ -65,7 +65,7 @@ export async function processImages(formData: FormData) {
 						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
 						format: actualFormat,
 					},
-				}
+				};
 
 				const processedBuffer = await processImage(
 					imageBuffer,
