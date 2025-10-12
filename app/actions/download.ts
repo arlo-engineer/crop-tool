@@ -21,7 +21,7 @@ export async function getMultipleSignedUrls(sessionId: string) {
 			expiresIn: CONFIG.SIGNED_URL_EXPIRATION,
 		});
 
-		return { url, originalName: key.original_name };
+		return { url, processedName: key.processed_name };
 	});
 
 	return await Promise.all(urlPromises);

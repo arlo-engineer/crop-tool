@@ -6,11 +6,19 @@ import { TEXTS } from "@/lib/constants/text";
 import { saveMultipleImageMetadata } from "@/lib/db/supabase";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { R2PathManager } from "@/lib/storage/r2-path";
-import type { ImageStatus } from "@/lib/types/database";
+import type { ImageStatus, UploadedImageMetadata } from "@/lib/types/database";
+import type { OutputFormat } from "@/lib/types/imageProcessing";
+import {
+	getImageMetadata,
+	processImage,
+	validateImageBuffer,
+} from "@/lib/utils/imageProcessor";
 
 export async function processImages(formData: FormData) {
 	try {
 		const sessionId = formData.get("sessionId") as string;
+		const outputFormat =
+			(formData.get("outputFormat") as OutputFormat) || "original";
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -30,23 +38,62 @@ export async function processImages(formData: FormData) {
 				const arrayBuffer = await file.arrayBuffer();
 				const imageBuffer = Buffer.from(arrayBuffer);
 
-				// add processing
-				const processedBuffer = imageBuffer;
+				const isValid = await validateImageBuffer(imageBuffer);
+				if (!isValid) {
+					throw new Error(
+						`${TEXTS.INVALID_IMAGE_BUFFER_MESSAGE}\n(${file.name})`,
+					);
+				}
 
-				const r2Key = pathManager.getProcessedImagePath(sessionId, file.name);
-				await uploadToR2(r2Key, processedBuffer, file.type);
+				const metadata = await getImageMetadata(imageBuffer);
+
+				const actualFormat: "jpeg" | "png" | "webp" =
+					outputFormat === "original"
+						? (metadata.format as "jpeg" | "png" | "webp")
+						: outputFormat;
+
+				const processingOptions = {
+					crop: {
+						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						strategy: "person" as const,
+					},
+					resize: {
+						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
+						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
+						format: actualFormat,
+					},
+				};
+
+				const processedBuffer = await processImage(
+					imageBuffer,
+					processingOptions,
+				);
+
+				const processedFileName = file.name.replace(
+					/\.[^/.]+$/,
+					`.${actualFormat}`,
+				);
+				const r2Key = pathManager.getProcessedImagePath(
+					sessionId,
+					processedFileName,
+				);
+
+				await uploadToR2(r2Key, processedBuffer, `image/${actualFormat}`);
 
 				return {
 					session_id: sessionId,
 					original_name: file.name,
+					processed_name: processedFileName,
 					processed_r2_key: r2Key,
 					status: "completed" as ImageStatus,
-				};
+				} as UploadedImageMetadata;
 			}),
 		);
 
-		// save to cache
-		await sessionCache.addImage(sessionId, results);
+		sessionCache.addImage(sessionId, results as UploadedImageMetadata[]);
 
 		return {
 			success: true,
@@ -57,16 +104,20 @@ export async function processImages(formData: FormData) {
 		const sessionId = formData.get("sessionId") as string;
 		const files = getFilesFromFormData(formData);
 
-		// save to cache
-		await sessionCache.addImage(
+		sessionCache.addImage(
 			sessionId,
-			files.map((file: File) => ({
-				session_id: sessionId,
-				original_name: file.name,
-				processed_r2_key: "",
-				status: "error" as ImageStatus,
-				error_message: error instanceof Error ? error.message : "Unknown error",
-			})),
+			files.map(
+				(file: File) =>
+					({
+						session_id: sessionId,
+						original_name: file.name,
+						processed_name: "",
+						processed_r2_key: "",
+						status: "error" as ImageStatus,
+						error_message:
+							error instanceof Error ? error.message : "Unknown error",
+					}) as UploadedImageMetadata,
+			),
 		);
 
 		return {
@@ -87,7 +138,7 @@ function getFilesFromFormData(formData: FormData) {
 }
 
 export async function flushImagesToDB(sessionId: string) {
-	const metadata = await sessionCache.getImages(sessionId);
+	const metadata = sessionCache.getImages(sessionId);
 
 	if (metadata.length === 0) return;
 
@@ -95,11 +146,12 @@ export async function flushImagesToDB(sessionId: string) {
 		metadata.map((image) => ({
 			session_id: image.session_id,
 			original_name: image.original_name,
+			processed_name: image.processed_name,
 			processed_r2_key: image.processed_r2_key,
 			status: image.status,
 			...(image.error_message && { error_message: image.error_message }),
 		})),
 	);
 
-	await sessionCache.clearImages(sessionId);
+	sessionCache.clearImages(sessionId);
 }

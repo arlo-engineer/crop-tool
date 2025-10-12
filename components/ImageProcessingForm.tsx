@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { getMultipleSignedUrls } from "@/app/actions/download";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
 import { useZipGeneration } from "@/hooks/useZipGeneration";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
+import type { OutputFormat } from "@/lib/types/imageProcessing";
 import type { ProcessingResult, Result } from "@/lib/types/result";
 import {
 	createFixedChunks,
 	createSmartChunks,
 } from "@/lib/utils/chunkOptimizer";
-import { downloadZipFile } from "@/lib/utils/download";
+import { downloadZipFile } from "@/lib/utils/downloadZipFile";
 
 export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [zipUrl, setZipUrl] = useState<string | null>(null);
+	const [outputFormat, setOutputFormat] = useState<OutputFormat>("original");
 	const { generateZip, isGenerating } = useZipGeneration();
+	const outputFormatId = useId();
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -30,6 +33,7 @@ export default function ImageProcessingForm() {
 		const result = await processAndGenerateZip(
 			event.currentTarget,
 			generateZip,
+			outputFormat,
 		);
 
 		if (result.success) {
@@ -59,6 +63,23 @@ export default function ImageProcessingForm() {
 					accept="image/*"
 					disabled={isProcessing || isGenerating}
 				/>
+				<div>
+					<label htmlFor={outputFormatId}>
+						{TEXTS.OUTPUT_FORMAT_MESSAGE}:{" "}
+					</label>
+					<select
+						id={outputFormatId}
+						name="outputFormat"
+						value={outputFormat}
+						onChange={(e) => setOutputFormat(e.target.value as OutputFormat)}
+						disabled={isProcessing || isGenerating}
+					>
+						<option value="original">{TEXTS.OUTPUT_FORMAT_ORIGINAL}</option>
+						<option value="jpeg">JPEG</option>
+						<option value="png">PNG</option>
+						<option value="webp">WebP</option>
+					</select>
+				</div>
 				<button type="submit" disabled={isProcessing || isGenerating}>
 					{isProcessing || isGenerating
 						? TEXTS.PROCESSING
@@ -77,8 +98,9 @@ export default function ImageProcessingForm() {
 async function processAndGenerateZip(
 	form: HTMLFormElement,
 	generateZip: (
-		sources: Array<{ url: string; originalName: string }>,
+		sources: Array<{ url: string; processedName: string }>,
 	) => Promise<string>,
+	outputFormat: OutputFormat,
 ): Promise<ProcessingResult> {
 	const sessionId = crypto.randomUUID();
 
@@ -88,7 +110,7 @@ async function processAndGenerateZip(
 			return filesResult;
 		}
 
-		await processImagesInChunks(filesResult.data, sessionId);
+		await processImagesInChunks(filesResult.data, sessionId, outputFormat);
 
 		await flushImagesToDB(sessionId);
 
@@ -142,6 +164,7 @@ function extractAndValidateFiles(form: HTMLFormElement): Result<File[]> {
 async function processImagesInChunks(
 	files: File[],
 	sessionId: string,
+	outputFormat: OutputFormat,
 ): Promise<void> {
 	let chunks: File[][];
 
@@ -157,6 +180,7 @@ async function processImagesInChunks(
 		const chunkFormData = new FormData();
 
 		chunkFormData.append("sessionId", sessionId);
+		chunkFormData.append("outputFormat", outputFormat);
 
 		chunk.forEach((file, index) => {
 			chunkFormData.append(`file-${index}`, file);
