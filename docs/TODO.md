@@ -99,13 +99,13 @@
   - [x] `components/ImageProcessingForm.tsx`に幅入力フィールドを追加
   - [x] `components/ImageProcessingForm.tsx`に高さ入力フィールドを追加
   - [x] デフォルト値（640×800）をプレースホルダーまたは初期値として設定
-  - [x] サイズ入力フィールドの CSS スタイリングを追加（HTML5デフォルトスタイル使用）
+  - [x] サイズ入力フィールドの CSS スタイリングを追加（HTML5 デフォルトスタイル使用）
 
 - [x] **1.2 バリデーションの追加**
 
   - [x] `lib/constants/config.ts`に最小/最大サイズ制約を定義
     - 実装済み: MIN_WIDTH/HEIGHT: 100px, MAX_WIDTH/HEIGHT: 4000px
-  - [x] HTML5バリデーション（min/max属性）を実装
+  - [x] HTML5 バリデーション（min/max 属性）を実装
   - [x] サーバーサイドバリデーションを実装（`lib/utils/validation.ts`）
   - [x] `lib/constants/text.ts`にバリデーションエラーメッセージを追加
 
@@ -122,19 +122,19 @@
   - [x] `processImagesInChunks()`を更新してサイズパラメータを渡す
 
 - [x] **1.5 手動テスト**
-  - [x] デフォルト値でテスト（E2Eテストで検証済み）
+  - [x] デフォルト値でテスト（E2E テストで検証済み）
   - [x] カスタム値でテスト（サーバーサイドバリデーション実装済み）
   - [x] バリデーションエラー処理のテスト（HTML5 + サーバーサイド）
-  - [x] 様々な画像フォーマットでテスト（既存のE2Eテストで検証済み）
+  - [x] 様々な画像フォーマットでテスト（既存の E2E テストで検証済み）
 
 **推定作業時間:** 4-6 時間
 
 **修正されたファイル:**
 
-- ✅ `components/ImageProcessingForm.tsx` - width/height入力フィールド追加、クライアント側バリデーション簡素化
-- ✅ `app/actions/process.ts` - width/heightパラメータ受け取り、サーバーサイドバリデーション統合
-- ✅ `lib/constants/config.ts` - IMAGE_SIZE_LIMITS追加
-- ✅ `lib/constants/text.ts` - SIZE_INPUT_WIDTH_LABEL, SIZE_INPUT_HEIGHT_LABEL, SIZE_VALIDATION_ERROR追加
+- ✅ `components/ImageProcessingForm.tsx` - width/height 入力フィールド追加、クライアント側バリデーション簡素化
+- ✅ `app/actions/process.ts` - width/height パラメータ受け取り、サーバーサイドバリデーション統合
+- ✅ `lib/constants/config.ts` - IMAGE_SIZE_LIMITS 追加
+- ✅ `lib/constants/text.ts` - SIZE_INPUT_WIDTH_LABEL, SIZE_INPUT_HEIGHT_LABEL, SIZE_VALIDATION_ERROR 追加
 
 **新規作成されたファイル:**
 
@@ -142,80 +142,84 @@
 
 ---
 
-## フェーズ 2: R2 ストレージクリーンアップ実装（優先度: 中）
+## フェーズ 2: R2 ストレージ自動削除設定（優先度: 高）
 
 ### 概要
 
-コスト管理と期限切れセッションデータの削除のため、R2 ストレージの削除機能を実装する。
+**MVP 向け簡易実装**: コスト管理のため、Cloudflare R2 のライフサイクルポリシー機能を利用して、期限切れ画像を自動削除する。コード実装は不要で、Cloudflare Dashboard から設定するのみ。
+
+**Supabase データの削除は見送り**: MVP では Supabase の `images` テーブルのデータは削除せず、将来的にマーケティング分析や障害調査に活用する。
+
+### R2 パス構造（再確認）
+
+```
+dev/sessions/{sessionId}/processed/{fileName}
+prod/sessions/{sessionId}/processed/{fileName}
+```
 
 ### タスク
 
-- [ ] **2.1 R2 削除関数の追加**
+- [x] **2.1 Cloudflare R2 ライフサイクルポリシー設定**
 
-  - [ ] `lib/storage/r2.ts`に`deleteFromR2(key: string)`を追加
-    - AWS SDK の`DeleteObjectCommand`を使用
-  - [ ] `lib/storage/r2.ts`に`listSessionObjects(sessionId: string)`を追加
-    - プレフィックスフィルタ付きの`ListObjectsV2Command`を使用
-  - [ ] `lib/storage/r2.ts`に`deleteSessionFromR2(sessionId: string)`を追加
-    - セッションディレクトリ内のすべてのオブジェクトをリスト
-    - バッチでオブジェクトを削除（`DeleteObjectsCommand`を使用）
+  **手順:**
 
-- [ ] **2.2 クリーンアップ Server Actions の作成**
+  1. Cloudflare Dashboard にログイン
+  2. R2 → 該当バケットを選択
+  3. **Settings** タブ → **Object Lifecycle Rules** セクション
+  4. **Add Rule** をクリック
 
-  - [ ] 新規ファイル`app/actions/cleanup.ts`を作成
-  - [ ] `deleteSession(sessionId: string)`を実装
-    - R2 ストレージから削除
-    - Supabase images テーブルから削除
-    - 成功/エラー結果を返す
-  - [ ] `cleanupExpiredSessions()`を実装
-    - Supabase から期限切れセッションをクエリ
-    - 各期限切れセッションを削除
-    - クリーンアップ結果をログ出力
+  **ルール 1: 開発環境の自動削除**
 
-- [ ] **2.3 データベースマイグレーション**
+  - [ ] ルール名: `delete-dev-sessions-after-1-day`
+  - [ ] ルールステータス: `Enabled`
+  - [ ] プレフィックス: `dev/sessions/`
+  - [ ] 削除期間: `1 days`
 
-  - [ ] `supabase/migrations/`にマイグレーションファイルを作成
-  - [ ] `images`テーブルに`expires_at`カラム（timestamp）を追加
-  - [ ] デフォルト有効期限を設定（例: created_at から 24 時間後）
-  - [ ] 効率的なクエリのため`expires_at`にインデックスを追加
+  **ルール 2: 本番環境の自動削除**
 
-- [ ] **2.4 セッションキャッシュの更新**
+  - [x] ルール名: `delete-prod-sessions-after-3-day`
+  - [x] ルールステータス: `Enabled`
+  - [x] プレフィックス: `prod/sessions/`
+  - [x] 削除期間: `3 days`
 
-  - [ ] `lib/cache/sessionCache.ts`を更新して有効期限を設定
-  - [ ] キャッシュクリーンアップロジックを追加（メモリから古いセッションを削除）
+- [x] **2.2 設定確認**
 
-- [ ] **2.5 オプション: クリーンアップ API エンドポイント**
+  - [x] Cloudflare Dashboard で両ルールが `Enabled` になっていることを確認
+  - [x] プレフィックスと削除期間が正しいことを確認
 
-  - [ ] API ルート`app/api/cleanup/route.ts`を作成
-  - [ ] 手動セッション削除エンドポイントを実装
-  - [ ] 認証/認可を追加（必要に応じて）
+- [ ] **2.3 動作テスト（推奨）**
 
-- [ ] **2.6 オプション: スケジュールされたクリーンアップ**
+  - [x] 開発環境で画像をアップロード
+  - [ ] 24〜48 時間後に R2 コンソールで削除されていることを確認
+  - [ ] （オプション）テスト用に削除期間を短く設定（例: 1 時間）して即座に検証
 
-  - [ ] cron ジョブまたはスケジュールタスクを設定
-  - [ ] `cleanupExpiredSessions()`を定期的に呼び出し（例: 1 時間ごと）
-  - [ ] Vercel Cron Jobs または外部スケジューラの使用を検討
-
-- [ ] **2.7 手動テスト**
-  - [ ] 単一ファイル削除のテスト
-  - [ ] セッション削除（複数ファイル）のテスト
-  - [ ] 期限切れセッションクリーンアップのテスト
-  - [ ] Supabase レコードが削除されることを確認
-  - [ ] エラーハンドリングのテスト（ファイルなし、ネットワークエラー）
-
-**推定作業時間:** 6-8 時間
+**推定作業時間:** 30 分〜1 時間（設定のみ）
 
 **作成が必要なファイル:**
 
-- `app/actions/cleanup.ts`
-- `supabase/migrations/YYYYMMDDHHMMSS_add_expires_at.sql`
-- `app/api/cleanup/route.ts`（オプション）
+- なし（Cloudflare Dashboard からの設定のみ）
 
 **修正が必要なファイル:**
 
-- `lib/storage/r2.ts`
-- `lib/cache/sessionCache.ts`
-- `lib/constants/config.ts`（EXPIRATION_HOURS を追加）
+- `CLAUDE.md`（ライフサイクルポリシーの説明追加）
+- `docs/TODO.md`（このファイル、完了後にマーク）
+
+---
+
+### 将来の拡張（MVP 後に検討）
+
+以下の機能は MVP では実装せず、運用状況を見て必要に応じて追加する:
+
+- **Supabase データの自動削除バッチ**
+  - 成功データ: 7〜30 日後に削除
+  - エラーデータ: 90 日〜永続保持
+  - Supabase の `pg_cron` または外部スケジューラを使用
+- **手動削除 API エンドポイント**
+  - ユーザーが即座にセッションを削除できる機能
+- **エラー画像のサンプリング保存**
+  - デバッグ用に一部のエラー画像を長期保存
+- **マーケティング分析用テーブル**
+  - 個人情報を含まない集計専用テーブル
 
 ---
 
@@ -354,10 +358,10 @@ SESSION_DELETE_ERROR: "セッションの削除に失敗しました",
 
 ### フェーズ 2 完了条件:
 
-- ✅ R2 削除関数が正しく動作する
-- ✅ セッションを削除できる（R2 + Supabase）
-- ✅ 期限切れセッションが自動的にクリーンアップされる
-- ✅ ストレージに孤立したデータが残らない
+- ⬜ R2 ライフサイクルポリシーが正しく設定されている
+- ⬜ 開発環境（`dev/sessions/`）の画像が 1 日後に自動削除される
+- ⬜ 本番環境（`prod/sessions/`）の画像が 1 日後に自動削除される
+- ⬜ ドキュメント（CLAUDE.md）にライフサイクルポリシーの説明が追記されている
 
 ### フェーズ 3 完了条件:
 
@@ -369,4 +373,4 @@ SESSION_DELETE_ERROR: "セッションの削除に失敗しました",
 ---
 
 **最終更新日:** 2025-10-13
-**ステータス:** フェーズ1完了、フェーズ2以降は未着手
+**ステータス:** フェーズ 1 完了、フェーズ 2 進行中（R2 ライフサイクル設定のみ）、フェーズ 3 未着手
