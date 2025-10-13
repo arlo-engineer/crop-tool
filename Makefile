@@ -22,3 +22,6 @@ build:
 
 check:
 	docker compose --profile dev exec dev npm run check
+
+test:
+	docker compose --profile dev exec dev npm run test:e2e
