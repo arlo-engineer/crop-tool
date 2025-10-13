@@ -8,12 +8,12 @@ init:
 
 up:
 	docker compose --profile dev up dev -d
-	npx supabase start
+	npx supabase@2.51.0 start
 	@echo "Development server started: http://localhost:3000" && echo "Supabase started: http://localhost:54321"
 
 down:
 	docker compose --profile dev down
-	npx supabase stop
+	npx supabase@2.51.0 stop
 	@echo "Development environment and Supabase stopped"
 
 build:

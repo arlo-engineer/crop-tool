@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
-import { join } from "node:path";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { expect, test } from "@playwright/test";
 import { validateZipImages } from "../helpers/zipValidator";
 
 test.describe("Main Flow - Image Processing E2E", () => {
@@ -45,7 +45,11 @@ test.describe("Main Flow - Image Processing E2E", () => {
 		const download = await downloadPromise;
 
 		// Save ZIP file temporarily
-		const zipPath = join(__dirname, "../temp", await download.suggestedFilename());
+		const zipPath = join(
+			__dirname,
+			"../temp",
+			await download.suggestedFilename(),
+		);
 		await download.saveAs(zipPath);
 
 		// 6. Validate ZIP contents

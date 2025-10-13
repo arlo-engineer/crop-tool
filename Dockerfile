@@ -28,6 +28,9 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 RUN npm rebuild @tensorflow/tfjs-node --build-from-source || echo "TensorFlow.js rebuild failed, will fallback to center crop"
 
+RUN npx playwright install chromium && \
+    npx playwright install-deps chromium
+
 FROM base AS builder
 
 RUN apt-get update && apt-get install -y \

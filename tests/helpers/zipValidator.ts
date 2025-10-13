@@ -58,8 +58,8 @@ export async function validatePersonCentered(
 	distance?: number;
 }> {
 	const metadata = await sharp(imageBuffer).metadata();
-	const imageWidth = metadata.width!;
-	const imageHeight = metadata.height!;
+	const imageWidth = metadata.width;
+	const imageHeight = metadata.height;
 
 	const imageCenterX = imageWidth / 2;
 	const imageCenterY = imageHeight / 2;
@@ -85,15 +85,12 @@ export async function validatePersonCentered(
 	const toleranceY = imageHeight * toleranceRatio;
 
 	// Check if person is centered
-	const isPersonCentered =
-		distanceX <= toleranceX && distanceY <= toleranceY;
+	const isPersonCentered = distanceX <= toleranceX && distanceY <= toleranceY;
 
 	// Calculate normalized distance (0-1)
 	const normalizedDistance =
-		Math.sqrt(
-			Math.pow(distanceX / imageWidth, 2) +
-			Math.pow(distanceY / imageHeight, 2),
-		) * 100;
+		Math.sqrt((distanceX / imageWidth) ** 2 + (distanceY / imageHeight) ** 2) *
+		100;
 
 	return {
 		personDetected: true,

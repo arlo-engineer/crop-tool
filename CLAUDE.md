@@ -29,6 +29,9 @@ npm run start
 
 # Lintとフォーマット (Biome)
 npm run check
+
+# E2Eテスト実行 (Playwright)
+make test
 ```
 
 ## 環境変数設定
@@ -207,10 +210,36 @@ supabase db push
 - **R2 アップロード:** `Promise.all()`で並列処理済み
 - **セッションキャッシュ:** 長時間保持を避け、`flushImagesToDB()`で定期的にクリア
 
+## テスト
+
+### E2E テスト (Playwright)
+
+**テスト対象:**
+
+- 主要な画像処理フロー（画像アップロード → 処理 → ZIP ダウンロード → 検証）
+- 画像サイズ検証（640×800）
+- 人物検知機能と中央配置の検証
+
+**実行方法:**
+
+```bash
+make test
+```
+
+**テストファイル:**
+
+- `tests/e2e/main-flow.spec.ts`: メインフローの E2E テスト
+- `tests/helpers/zipValidator.ts`: ZIP 検証ヘルパー関数
+- `tests/fixtures/`: テスト用画像ファイル
+
+**重要:** Playwright のブラウザと依存関係は`Dockerfile`の`deps`ステージで自動的にインストールされる。手動セットアップは不要。
+
+詳細は `docs/TODO.md` のフェーズ 0 を参照。
+
 ## 今後の拡張予定
 
 プロジェクトルートの詳細設計書を参照:
 
-- **人物検知機能 (TensorFlow.js):** `lib/utils/personDetector.ts`実装予定
-- **person 戦略:** 人物を中心に配置したクロップ
-- **自動フォールバック:** 人物検知失敗時は`center`戦略へ
+- **人物検知機能 (TensorFlow.js):** `lib/utils/personDetector.ts`実装済み
+- **person 戦略:** 人物を中心に配置したクロップ実装済み
+- **自動フォールバック:** 人物検知失敗時は`center`戦略へフォールバック実装済み
