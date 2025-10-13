@@ -20,35 +20,35 @@
 
 ### タスク
 
-- [ ] **0.1 Playwright セットアップ（最小構成）**
+- [x] **0.1 Playwright セットアップ（最小構成）**
 
-  - [ ] Playwright をインストール（Docker 経由）
+  - [x] Playwright をインストール（Docker 経由）
     ```bash
     docker compose --profile dev exec dev npm install -D @playwright/test
     docker compose --profile dev exec dev npx playwright install chromium
     ```
-  - [ ] `playwright.config.ts` を作成（最小設定）
-  - [ ] `tests/e2e/` ディレクトリを作成
-  - [ ] package.json にテストスクリプトを追加
+  - [x] `playwright.config.ts` を作成（最小設定）
+  - [x] `tests/e2e/` ディレクトリを作成
+  - [x] package.json にテストスクリプトを追加
     ```json
     "test:e2e": "playwright test"
     ```
-  - [ ] Makefile にテスト実行コマンドを追加（推奨）
+  - [x] Makefile にテスト実行コマンドを追加（推奨）
     ```makefile
     test:
     	docker compose --profile dev exec dev npm run test:e2e
     ```
 
-- [ ] **0.2 テスト用画像の準備**
+- [x] **0.2 テスト用画像の準備**
 
-  - [ ] `tests/fixtures/` ディレクトリを作成
-  - [ ] テスト用サンプル画像を 2-3 枚配置（JPEG/PNG）
-  - [ ] `.gitignore` にテスト生成物を追加
+  - [x] `tests/fixtures/` ディレクトリを作成
+  - [x] テスト用サンプル画像を 2-3 枚配置（JPEG/PNG）
+  - [x] `.gitignore` にテスト生成物を追加
 
-- [ ] **0.3 メインフローの E2E テスト実装**
+- [x] **0.3 メインフローの E2E テスト実装**
 
-  - [ ] `tests/e2e/main-flow.spec.ts` を作成
-  - [ ] テストシナリオ:
+  - [x] `tests/e2e/main-flow.spec.ts` を作成
+  - [x] テストシナリオ:
     1. トップページにアクセス
     2. ファイル入力に画像を選択（2-3 枚、**人物が写っている画像を含む**）
     3. 「処理開始」ボタンをクリック
@@ -58,12 +58,12 @@
     7. 画像のサイズが 640×800 であることを確認（Sharp 使用）
     8. **人物が画像の中央付近に配置されていることを確認（人物検知テスト）**
 
-- [ ] **0.4 ZIP ファイル検証ヘルパーの作成**
-  - [ ] `tests/helpers/zipValidator.ts` を作成
-  - [ ] ZIP 解凍機能
-  - [ ] 画像サイズ検証機能（Sharp 使用）
-  - [ ] 画像枚数検証機能
-  - [ ] **人物中央配置検証機能（TensorFlow.js または類似ライブラリ使用）**
+- [x] **0.4 ZIP ファイル検証ヘルパーの作成**
+  - [x] `tests/helpers/zipValidator.ts` を作成
+  - [x] ZIP 解凍機能
+  - [x] 画像サイズ検証機能（Sharp 使用）
+  - [x] 画像枚数検証機能
+  - [x] **人物中央配置検証機能（TensorFlow.js または類似ライブラリ使用）**
     - 処理済み画像から人物検知を実行
     - 検出された人物のバウンディングボックス中心座標を取得
     - 画像中心との距離が許容範囲内（例: 画像幅の 20%以内）であることを確認
