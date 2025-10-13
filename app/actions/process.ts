@@ -13,18 +13,18 @@ import {
 	processImage,
 	validateImageBuffer,
 } from "@/lib/utils/imageProcessor";
+import { validateAndParseImageDimensionsWithFallback } from "@/lib/utils/validation";
 
 export async function processImages(formData: FormData) {
 	try {
 		const sessionId = formData.get("sessionId") as string;
 		const outputFormat =
 			(formData.get("outputFormat") as OutputFormat) || "original";
-		const width =
-			Number.parseInt(formData.get("width") as string, 10) ||
-			CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH;
-		const height =
-			Number.parseInt(formData.get("height") as string, 10) ||
-			CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT;
+
+		// Validate and parse image dimensions with server-side validation
+		const { width, height } =
+			validateAndParseImageDimensionsWithFallback(formData);
+
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -60,13 +60,13 @@ export async function processImages(formData: FormData) {
 
 				const processingOptions = {
 					crop: {
-						width: width,
-						height: height,
+						width,
+						height,
 						strategy: "person" as const,
 					},
 					resize: {
-						width: width,
-						height: height,
+						width,
+						height,
 						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
 						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
 						format: actualFormat,

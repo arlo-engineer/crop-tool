@@ -32,16 +32,6 @@ export default function ImageProcessingForm() {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		if (
-			width < CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH ||
-			width > CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH ||
-			height < CONFIG.IMAGE_SIZE_LIMITS.MIN_HEIGHT ||
-			height > CONFIG.IMAGE_SIZE_LIMITS.MAX_HEIGHT
-		) {
-			alert(TEXTS.SIZE_VALIDATION_ERROR);
-			return;
-		}
-
 		setIsProcessing(true);
 
 		if (zipUrl) {
