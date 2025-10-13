@@ -23,4 +23,8 @@ export const TEXTS = {
 	INVALID_IMAGE_BUFFER_MESSAGE: "無効な画像データです",
 	IMAGE_RESIZE_ERROR_MESSAGE: "画像のリサイズに失敗しました",
 	IMAGE_CROP_ERROR_MESSAGE: "画像の切り抜きに失敗しました",
+
+	SIZE_INPUT_WIDTH_LABEL: "幅 (px)",
+	SIZE_INPUT_HEIGHT_LABEL: "高さ (px)",
+	SIZE_VALIDATION_ERROR: `画像サイズは${CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH}〜${CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}pxの範囲で指定してください`,
 } as const;

@@ -7,7 +7,7 @@ import { useZipGeneration } from "@/hooks/useZipGeneration";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
 import type { OutputFormat } from "@/lib/types/imageProcessing";
-import type { ProcessingResult, Result } from "@/lib/types/result";
+import type { ProcessingResult } from "@/lib/types/result";
 import {
 	createFixedChunks,
 	createSmartChunks,
@@ -18,11 +18,20 @@ export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [zipUrl, setZipUrl] = useState<string | null>(null);
 	const [outputFormat, setOutputFormat] = useState<OutputFormat>("original");
+	const [width, setWidth] = useState<number>(
+		CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+	);
+	const [height, setHeight] = useState<number>(
+		CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+	);
 	const { generateZip, isGenerating } = useZipGeneration();
 	const outputFormatId = useId();
+	const widthInputId = useId();
+	const heightInputId = useId();
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
 		setIsProcessing(true);
 
 		if (zipUrl) {
@@ -34,6 +43,8 @@ export default function ImageProcessingForm() {
 			event.currentTarget,
 			generateZip,
 			outputFormat,
+			width,
+			height,
 		);
 
 		if (result.success) {
@@ -63,6 +74,34 @@ export default function ImageProcessingForm() {
 					accept="image/*"
 					disabled={isProcessing || isGenerating}
 				/>
+				<div>
+					<label htmlFor={widthInputId}>{TEXTS.SIZE_INPUT_WIDTH_LABEL}: </label>
+					<input
+						id={widthInputId}
+						type="number"
+						name="width"
+						value={width}
+						onChange={(e) => setWidth(Number(e.target.value))}
+						min={CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH}
+						max={CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}
+						disabled={isProcessing || isGenerating}
+					/>
+				</div>
+				<div>
+					<label htmlFor={heightInputId}>
+						{TEXTS.SIZE_INPUT_HEIGHT_LABEL}:{" "}
+					</label>
+					<input
+						id={heightInputId}
+						type="number"
+						name="height"
+						value={height}
+						onChange={(e) => setHeight(Number(e.target.value))}
+						min={CONFIG.IMAGE_SIZE_LIMITS.MIN_HEIGHT}
+						max={CONFIG.IMAGE_SIZE_LIMITS.MAX_HEIGHT}
+						disabled={isProcessing || isGenerating}
+					/>
+				</div>
 				<div>
 					<label htmlFor={outputFormatId}>
 						{TEXTS.OUTPUT_FORMAT_MESSAGE}:{" "}
@@ -101,16 +140,21 @@ async function processAndGenerateZip(
 		sources: Array<{ url: string; processedName: string }>,
 	) => Promise<string>,
 	outputFormat: OutputFormat,
+	width: number,
+	height: number,
 ): Promise<ProcessingResult> {
 	const sessionId = crypto.randomUUID();
 
 	try {
-		const filesResult = extractAndValidateFiles(form);
-		if (!filesResult.success) {
-			return filesResult;
+		const formData = new FormData(form);
+		const allFiles = formData.getAll("files") as File[];
+		const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
+
+		if (files.length === 0) {
+			return { success: false, error: TEXTS.SELECT_FILES_MESSAGE };
 		}
 
-		await processImagesInChunks(filesResult.data, sessionId, outputFormat);
+		await processImagesInChunks(files, sessionId, outputFormat, width, height);
 
 		await flushImagesToDB(sessionId);
 
@@ -127,44 +171,12 @@ async function processAndGenerateZip(
 	}
 }
 
-function extractAndValidateFiles(form: HTMLFormElement): Result<File[]> {
-	const formData = new FormData(form);
-	const allFiles = formData.getAll("files") as File[];
-	const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
-
-	if (files.length === 0) {
-		return { success: false, error: TEXTS.SELECT_FILES_MESSAGE };
-	}
-
-	if (files.length > CONFIG.MAX_FILES) {
-		return { success: false, error: TEXTS.MAX_FILES_MESSAGE };
-	}
-
-	const oversizedFile = files.find((file) => file.size > CONFIG.MAX_FILE_SIZE);
-	if (oversizedFile) {
-		return { success: false, error: TEXTS.MAX_FILE_SIZE_MESSAGE };
-	}
-
-	const invalidTypeFile = files.find(
-		(file) =>
-			!CONFIG.ALLOWED_MIME_TYPES.includes(
-				file.type as (typeof CONFIG.ALLOWED_MIME_TYPES)[number],
-			),
-	);
-	if (invalidTypeFile) {
-		return {
-			success: false,
-			error: `${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`,
-		};
-	}
-
-	return { success: true, data: files };
-}
-
 async function processImagesInChunks(
 	files: File[],
 	sessionId: string,
 	outputFormat: OutputFormat,
+	width: number,
+	height: number,
 ): Promise<void> {
 	let chunks: File[][];
 
@@ -181,6 +193,8 @@ async function processImagesInChunks(
 
 		chunkFormData.append("sessionId", sessionId);
 		chunkFormData.append("outputFormat", outputFormat);
+		chunkFormData.append("width", width.toString());
+		chunkFormData.append("height", height.toString());
 
 		chunk.forEach((file, index) => {
 			chunkFormData.append(`file-${index}`, file);
