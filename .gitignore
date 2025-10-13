@@ -43,4 +43,10 @@ next-env.d.ts
 # ファイルアップロードの処理が終わったら削除する
 uploads/
 
+# Playwright E2E tests
+/tests/temp/
+/test-results/
+/playwright-report/
+/.cache/
+
 .serena/

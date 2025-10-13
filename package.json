@@ -6,7 +6,8 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"check": "biome check --write ./"
+		"check": "biome check --write ./",
+		"test:e2e": "playwright test"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.894.0",
@@ -23,6 +24,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.4",
+		"@playwright/test": "^1.56.0",
 		"@tailwindcss/postcss": "^4",
 		"@types/jszip": "^3.4.0",
 		"@types/node": "^20",
