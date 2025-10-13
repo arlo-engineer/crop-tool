@@ -7,7 +7,7 @@ import { useZipGeneration } from "@/hooks/useZipGeneration";
 import { CONFIG } from "@/lib/constants/config";
 import { TEXTS } from "@/lib/constants/text";
 import type { OutputFormat } from "@/lib/types/imageProcessing";
-import type { ProcessingResult, Result } from "@/lib/types/result";
+import type { ProcessingResult } from "@/lib/types/result";
 import {
 	createFixedChunks,
 	createSmartChunks,
@@ -146,18 +146,15 @@ async function processAndGenerateZip(
 	const sessionId = crypto.randomUUID();
 
 	try {
-		const filesResult = extractAndValidateFiles(form);
-		if (!filesResult.success) {
-			return filesResult;
+		const formData = new FormData(form);
+		const allFiles = formData.getAll("files") as File[];
+		const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
+
+		if (files.length === 0) {
+			return { success: false, error: TEXTS.SELECT_FILES_MESSAGE };
 		}
 
-		await processImagesInChunks(
-			filesResult.data,
-			sessionId,
-			outputFormat,
-			width,
-			height,
-		);
+		await processImagesInChunks(files, sessionId, outputFormat, width, height);
 
 		await flushImagesToDB(sessionId);
 
@@ -172,40 +169,6 @@ async function processAndGenerateZip(
 			error: getErrorMessage(error),
 		};
 	}
-}
-
-function extractAndValidateFiles(form: HTMLFormElement): Result<File[]> {
-	const formData = new FormData(form);
-	const allFiles = formData.getAll("files") as File[];
-	const files = allFiles.filter((file) => file.size > 0 && file.name !== "");
-
-	if (files.length === 0) {
-		return { success: false, error: TEXTS.SELECT_FILES_MESSAGE };
-	}
-
-	if (files.length > CONFIG.MAX_FILES) {
-		return { success: false, error: TEXTS.MAX_FILES_MESSAGE };
-	}
-
-	const oversizedFile = files.find((file) => file.size > CONFIG.MAX_FILE_SIZE);
-	if (oversizedFile) {
-		return { success: false, error: TEXTS.MAX_FILE_SIZE_MESSAGE };
-	}
-
-	const invalidTypeFile = files.find(
-		(file) =>
-			!CONFIG.ALLOWED_MIME_TYPES.includes(
-				file.type as (typeof CONFIG.ALLOWED_MIME_TYPES)[number],
-			),
-	);
-	if (invalidTypeFile) {
-		return {
-			success: false,
-			error: `${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${invalidTypeFile.name})`,
-		};
-	}
-
-	return { success: true, data: files };
 }
 
 async function processImagesInChunks(

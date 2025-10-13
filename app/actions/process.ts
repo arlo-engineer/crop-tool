@@ -13,7 +13,10 @@ import {
 	processImage,
 	validateImageBuffer,
 } from "@/lib/utils/imageProcessor";
-import { validateAndParseImageDimensionsWithFallback } from "@/lib/utils/validation";
+import {
+	validateAndParseImageDimensionsWithFallback,
+	validateFiles,
+} from "@/lib/utils/validation";
 
 export async function processImages(formData: FormData) {
 	try {
@@ -21,7 +24,6 @@ export async function processImages(formData: FormData) {
 		const outputFormat =
 			(formData.get("outputFormat") as OutputFormat) || "original";
 
-		// Validate and parse image dimensions with server-side validation
 		const { width, height } =
 			validateAndParseImageDimensionsWithFallback(formData);
 
@@ -29,15 +31,7 @@ export async function processImages(formData: FormData) {
 
 		const files = getFilesFromFormData(formData);
 
-		for (const file of files) {
-			if (
-				!CONFIG.ALLOWED_MIME_TYPES.includes(
-					file.type as (typeof CONFIG.ALLOWED_MIME_TYPES)[number],
-				)
-			) {
-				throw new Error(`${TEXTS.INVALID_FILE_TYPE_MESSAGE}\n(${file.name})`);
-			}
-		}
+		validateFiles(files);
 
 		const results = await Promise.all(
 			files.map(async (file) => {
