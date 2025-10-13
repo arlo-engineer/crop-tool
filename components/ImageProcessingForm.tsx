@@ -18,11 +18,30 @@ export default function ImageProcessingForm() {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [zipUrl, setZipUrl] = useState<string | null>(null);
 	const [outputFormat, setOutputFormat] = useState<OutputFormat>("original");
+	const [width, setWidth] = useState<number>(
+		CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
+	);
+	const [height, setHeight] = useState<number>(
+		CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+	);
 	const { generateZip, isGenerating } = useZipGeneration();
 	const outputFormatId = useId();
+	const widthInputId = useId();
+	const heightInputId = useId();
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
+		if (
+			width < CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH ||
+			width > CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH ||
+			height < CONFIG.IMAGE_SIZE_LIMITS.MIN_HEIGHT ||
+			height > CONFIG.IMAGE_SIZE_LIMITS.MAX_HEIGHT
+		) {
+			alert(TEXTS.SIZE_VALIDATION_ERROR);
+			return;
+		}
+
 		setIsProcessing(true);
 
 		if (zipUrl) {
@@ -34,6 +53,8 @@ export default function ImageProcessingForm() {
 			event.currentTarget,
 			generateZip,
 			outputFormat,
+			width,
+			height,
 		);
 
 		if (result.success) {
@@ -63,6 +84,34 @@ export default function ImageProcessingForm() {
 					accept="image/*"
 					disabled={isProcessing || isGenerating}
 				/>
+				<div>
+					<label htmlFor={widthInputId}>{TEXTS.SIZE_INPUT_WIDTH_LABEL}: </label>
+					<input
+						id={widthInputId}
+						type="number"
+						name="width"
+						value={width}
+						onChange={(e) => setWidth(Number(e.target.value))}
+						min={CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH}
+						max={CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}
+						disabled={isProcessing || isGenerating}
+					/>
+				</div>
+				<div>
+					<label htmlFor={heightInputId}>
+						{TEXTS.SIZE_INPUT_HEIGHT_LABEL}:{" "}
+					</label>
+					<input
+						id={heightInputId}
+						type="number"
+						name="height"
+						value={height}
+						onChange={(e) => setHeight(Number(e.target.value))}
+						min={CONFIG.IMAGE_SIZE_LIMITS.MIN_HEIGHT}
+						max={CONFIG.IMAGE_SIZE_LIMITS.MAX_HEIGHT}
+						disabled={isProcessing || isGenerating}
+					/>
+				</div>
 				<div>
 					<label htmlFor={outputFormatId}>
 						{TEXTS.OUTPUT_FORMAT_MESSAGE}:{" "}
@@ -101,6 +150,8 @@ async function processAndGenerateZip(
 		sources: Array<{ url: string; processedName: string }>,
 	) => Promise<string>,
 	outputFormat: OutputFormat,
+	width: number,
+	height: number,
 ): Promise<ProcessingResult> {
 	const sessionId = crypto.randomUUID();
 
@@ -110,7 +161,13 @@ async function processAndGenerateZip(
 			return filesResult;
 		}
 
-		await processImagesInChunks(filesResult.data, sessionId, outputFormat);
+		await processImagesInChunks(
+			filesResult.data,
+			sessionId,
+			outputFormat,
+			width,
+			height,
+		);
 
 		await flushImagesToDB(sessionId);
 
@@ -165,6 +222,8 @@ async function processImagesInChunks(
 	files: File[],
 	sessionId: string,
 	outputFormat: OutputFormat,
+	width: number,
+	height: number,
 ): Promise<void> {
 	let chunks: File[][];
 
@@ -181,6 +240,8 @@ async function processImagesInChunks(
 
 		chunkFormData.append("sessionId", sessionId);
 		chunkFormData.append("outputFormat", outputFormat);
+		chunkFormData.append("width", width.toString());
+		chunkFormData.append("height", height.toString());
 
 		chunk.forEach((file, index) => {
 			chunkFormData.append(`file-${index}`, file);

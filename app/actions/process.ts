@@ -19,6 +19,12 @@ export async function processImages(formData: FormData) {
 		const sessionId = formData.get("sessionId") as string;
 		const outputFormat =
 			(formData.get("outputFormat") as OutputFormat) || "original";
+		const width =
+			Number.parseInt(formData.get("width") as string, 10) ||
+			CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH;
+		const height =
+			Number.parseInt(formData.get("height") as string, 10) ||
+			CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT;
 		const pathManager = new R2PathManager();
 
 		const files = getFilesFromFormData(formData);
@@ -54,13 +60,13 @@ export async function processImages(formData: FormData) {
 
 				const processingOptions = {
 					crop: {
-						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						width: width,
+						height: height,
 						strategy: "person" as const,
 					},
 					resize: {
-						width: CONFIG.IMAGE_PROCESSING.DEFAULT_WIDTH,
-						height: CONFIG.IMAGE_PROCESSING.DEFAULT_HEIGHT,
+						width: width,
+						height: height,
 						fit: CONFIG.IMAGE_PROCESSING.RESIZE_FIT,
 						quality: CONFIG.IMAGE_PROCESSING.QUALITY,
 						format: actualFormat,

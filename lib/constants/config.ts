@@ -29,4 +29,11 @@ export const CONFIG = {
 		TIMEOUT_MS: 10000,
 		FALLBACK_FIT: "contain" as const,
 	},
+
+	IMAGE_SIZE_LIMITS: {
+		MIN_WIDTH: 100,
+		MAX_WIDTH: 4000,
+		MIN_HEIGHT: 100,
+		MAX_HEIGHT: 4000,
+	},
 } as const;
