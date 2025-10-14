@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useId, useState } from "react";
 import { getMultipleSignedUrls } from "@/app/actions/download";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
@@ -49,7 +50,7 @@ export default function ImageProcessingForm() {
 
 		if (result.success) {
 			setZipUrl(result.data);
-			alert(TEXTS.COMPLETE_MESSAGE);
+			// alert(TEXTS.COMPLETE_MESSAGE);
 		} else {
 			alert(result.error);
 		}
@@ -66,6 +67,13 @@ export default function ImageProcessingForm() {
 
 	return (
 		<>
+			{!zipUrl && (
+				<Image className="mt-5" src="/character-1.png" alt="test" width={600} height={600} />
+			)}
+			{zipUrl && (
+				<Image src="/character-2.png" alt="test" width={624} height={624} />
+			)}
+
 			<form onSubmit={handleSubmit}>
 				<input
 					type="file"
