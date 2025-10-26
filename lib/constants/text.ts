@@ -1,14 +1,32 @@
 import { CONFIG } from "./config";
 
 export const TEXTS = {
+	// Header
+	APP_NAME: "ImageProcessor",
+	NAV_QA: "QA",
+	NAV_HELP: "Help",
+
+	// Upload Zone
+	UPLOAD_TITLE: "ドラッグ&ドロップまたはクリックして画像を選択",
+	UPLOAD_MAX_FILES: `最大${CONFIG.MAX_FILES}枚まで対応`,
+	UPLOAD_SUPPORTED_FORMATS: "JPG, PNG対応",
+
+	// Processing Controls
+	IMAGE_COUNT_LABEL: "枚",
 	OUTPUT_FORMAT_MESSAGE: "出力フォーマット",
-	OUTPUT_FORMAT_ORIGINAL: "元のフォーマットを維持",
+	OUTPUT_FORMAT_ORIGINAL: "オリジナル",
+	PROCESS_START_BUTTON: "一括加工開始",
+	DOWNLOAD_ZIP_BUTTON: "Download ZIP",
+
+	// Progress
+	PROGRESS_PROCESSING: "処理中",
+	PROGRESS_COMPLETED: "処理完了",
+
+	// Messages
 	COMPLETE_MESSAGE: "すべての画像の処理が完了しました",
 	ERROR_MESSAGE: "処理中にエラーが発生しました",
-
 	PROCESSING: "処理中...",
 	PROCESS_START: "処理開始",
-
 	SELECT_FILES_MESSAGE: "ファイルを選択してください",
 	MAX_FILES_MESSAGE: `最大${CONFIG.MAX_FILES}枚まで選択可能です`,
 	MAX_FILE_SIZE_MESSAGE: `最大${CONFIG.MAX_FILE_SIZE / 1024 / 1024} MBまで選択可能です`,

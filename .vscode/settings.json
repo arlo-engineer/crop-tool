@@ -1,10 +1,5 @@
 {
-	"cSpell.words": [
-		"bbox",
-		"presigner",
-		"supabase",
-		"tfjs"
-	],
+	"cSpell.words": ["bbox", "presigner", "supabase", "tfjs"],
 
 	// biome
 	"[javascript]": {
