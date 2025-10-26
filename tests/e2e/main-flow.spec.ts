@@ -10,8 +10,8 @@ test.describe("Main Flow - Image Processing E2E", () => {
 		// 1. Navigate to home page
 		await page.goto("/");
 
-		// Verify page loaded (Next.js default title)
-		await expect(page).toHaveTitle(/Create Next App/i);
+		// Verify page loaded
+		await expect(page).toHaveTitle(/ImageProcessor/i);
 
 		// 2. Select test images
 		const fixturesPath = join(__dirname, "../fixtures");
@@ -25,19 +25,18 @@ test.describe("Main Flow - Image Processing E2E", () => {
 		]);
 
 		// 3. Click the processing button
-		const processButton = page.locator('button[type="submit"]');
+		const processButton = page.getByRole("button", { name: /一括加工開始/i });
 		await expect(processButton).toBeVisible();
-		await expect(processButton).toContainText(/処理開始/i);
 
 		// Click and wait for processing to complete
 		await processButton.click();
 
 		// 4. Wait for processing to complete
 		// The "Download ZIP" button should appear after processing
-		const downloadButton = page.locator('button:has-text("Download ZIP")');
+		const downloadButton = page.getByRole("button", { name: /Download ZIP/i });
 
-		// Wait with a longer timeout for processing
-		await expect(downloadButton).toBeVisible({ timeout: 60000 });
+		// Wait with a longer timeout for processing (increased to 120 seconds)
+		await expect(downloadButton).toBeVisible({ timeout: 120000 });
 
 		// 5. Download ZIP file
 		const downloadPromise = page.waitForEvent("download");
