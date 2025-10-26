@@ -6,6 +6,12 @@ export const TEXTS = {
 	NAV_QA: "QA",
 	NAV_HELP: "Help",
 
+	// Hero Section
+	HERO_BADGE: "完全無料",
+	HERO_TITLE: "200枚の写真を一気にリサイズ。人物は自動で中央配置",
+	HERO_SUBTITLE:
+		"アップロードするだけで、AIが人物を検知。統一サイズの画像をZIPでダウンロード",
+
 	// Upload Zone
 	UPLOAD_TITLE: "ドラッグ&ドロップまたはクリックして画像を選択",
 	UPLOAD_MAX_FILES: `最大${CONFIG.MAX_FILES}枚まで対応`,
