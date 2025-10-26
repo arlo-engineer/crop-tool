@@ -19,6 +19,7 @@ import {
 	createSmartChunks,
 } from "@/lib/utils/chunkOptimizer";
 import { downloadZipFile } from "@/lib/utils/downloadZipFile";
+import { createThumbnails } from "@/lib/utils/thumbnailGenerator";
 
 interface ImageItem {
 	id: string;
@@ -42,11 +43,14 @@ export default function ImageProcessingForm() {
 	);
 	const { generateZip, isGenerating } = useZipGeneration();
 
-	const handleFilesSelected = (files: File[]) => {
-		const newImages: ImageItem[] = files.map((file) => ({
+	const handleFilesSelected = async (files: File[]) => {
+		// Generate lightweight thumbnails for preview (reduces memory usage)
+		const thumbnailUrls = await createThumbnails(files);
+
+		const newImages: ImageItem[] = files.map((file, index) => ({
 			id: crypto.randomUUID(),
 			fileName: file.name,
-			previewUrl: URL.createObjectURL(file),
+			previewUrl: thumbnailUrls[index],
 			status: "pending" as const,
 			file,
 		}));

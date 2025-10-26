@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { TEXTS } from "@/lib/constants/text";
 
 interface ImageUploadZoneProps {
-	onFilesSelected: (files: File[]) => void;
+	onFilesSelected: (files: File[]) => void | Promise<void>;
 	disabled?: boolean;
 }
 
