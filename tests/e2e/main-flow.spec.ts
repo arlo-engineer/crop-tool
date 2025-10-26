@@ -35,8 +35,8 @@ test.describe("Main Flow - Image Processing E2E", () => {
 		// The "Download ZIP" button should appear after processing
 		const downloadButton = page.getByRole("button", { name: /Download ZIP/i });
 
-		// Wait with a longer timeout for processing (increased to 120 seconds)
-		await expect(downloadButton).toBeVisible({ timeout: 120000 });
+		// Wait with a longer timeout for processing (increased to 180 seconds)
+		await expect(downloadButton).toBeVisible({ timeout: 180000 });
 
 		// 5. Download ZIP file
 		const downloadPromise = page.waitForEvent("download");

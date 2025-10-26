@@ -8,7 +8,7 @@ export const TEXTS = {
 
 	// Hero Section
 	HERO_BADGE: "完全無料",
-	HERO_TITLE: "200枚の写真を一気にリサイズ。人物は自動で中央配置",
+	HERO_TITLE: `${CONFIG.MAX_FILES}枚の写真を一気にリサイズ。人物は自動で中央配置`,
 	HERO_SUBTITLE:
 		"アップロードするだけで、AIが人物を検知。統一サイズの画像をZIPでダウンロード",
 

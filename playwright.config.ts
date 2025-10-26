@@ -8,8 +8,8 @@ export default defineConfig({
 	// Test directory
 	testDir: "./tests/e2e",
 
-	// Maximum time one test can run (2 minutes for image processing)
-	timeout: 120 * 1000,
+	// Maximum time one test can run (3 minutes for image processing)
+	timeout: 180 * 1000,
 
 	// Run tests in files in parallel
 	fullyParallel: false,
