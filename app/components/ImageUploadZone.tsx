@@ -50,7 +50,7 @@ export default function ImageUploadZone({
 
 	return (
 		<label
-			className={`flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-border-light dark:border-border-dark px-6 py-14 sm:py-20 md:py-28 lg:py-32 w-full max-w-3xl mx-auto shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.05),0_2px_4px_-2px_rgb(0_0_0_/_0.05)] ${
+			className={`flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-border-light dark:border-border-dark px-6 py-14 sm:py-16 md:py-18 lg:py-20 w-full max-w-3xl mx-auto shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.05),0_2px_4px_-2px_rgb(0_0_0_/_0.05)] ${
 				isDragging ? "bg-primary/10 border-primary" : ""
 			} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} transition-all`}
 			onDragOver={handleDragOver}

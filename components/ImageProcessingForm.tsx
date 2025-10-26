@@ -19,13 +19,13 @@ import {
 	createSmartChunks,
 } from "@/lib/utils/chunkOptimizer";
 import { downloadZipFile } from "@/lib/utils/downloadZipFile";
-import { createThumbnails } from "@/lib/utils/thumbnailGenerator";
+import { createThumbnail } from "@/lib/utils/thumbnailGenerator";
 
 interface ImageItem {
 	id: string;
 	fileName: string;
-	previewUrl: string;
-	status: "pending" | "processing" | "completed" | "error";
+	previewUrl: string | null;
+	status: "loading" | "pending" | "processing" | "completed" | "error";
 	file: File;
 }
 
@@ -44,18 +44,34 @@ export default function ImageProcessingForm() {
 	const { generateZip, isGenerating } = useZipGeneration();
 
 	const handleFilesSelected = async (files: File[]) => {
-		// Generate lightweight thumbnails for preview (reduces memory usage)
-		const thumbnailUrls = await createThumbnails(files);
-
-		const newImages: ImageItem[] = files.map((file, index) => ({
+		const placeholderImages: ImageItem[] = files.map((file) => ({
 			id: crypto.randomUUID(),
 			fileName: file.name,
-			previewUrl: thumbnailUrls[index],
-			status: "pending" as const,
+			previewUrl: null,
+			status: "loading" as const,
 			file,
 		}));
 
-		setImages((prev) => [...prev, ...newImages]);
+		setImages((prev) => [...prev, ...placeholderImages]);
+
+		placeholderImages.forEach(async (placeholderImage, index) => {
+			try {
+				const thumbnailUrl = await createThumbnail(files[index]);
+
+				setImages((prev) =>
+					prev.map((img) =>
+						img.id === placeholderImage.id
+							? { ...img, previewUrl: thumbnailUrl, status: "pending" as const }
+							: img,
+					),
+				);
+			} catch (error) {
+				console.error(
+					`Failed to generate thumbnail for ${placeholderImage.fileName}:`,
+					error,
+				);
+			}
+		});
 	};
 
 	const handleProcessStart = async () => {

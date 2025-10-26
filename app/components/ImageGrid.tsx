@@ -4,8 +4,8 @@ interface ImageGridProps {
 	images: Array<{
 		id: string;
 		fileName: string;
-		previewUrl: string;
-		status: "pending" | "processing" | "completed" | "error";
+		previewUrl: string | null;
+		status: "loading" | "pending" | "processing" | "completed" | "error";
 	}>;
 }
 
