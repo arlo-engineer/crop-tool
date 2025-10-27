@@ -1,4 +1,5 @@
 export const CONFIG = {
+	APP_NAME: "Crop Tool",
 	CHUNK_SIZE: 3,
 	MAX_FILES: 100,
 	MAX_FILE_SIZE: 8 * 1024 * 1024, // 8MB

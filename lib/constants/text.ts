@@ -2,7 +2,8 @@ import { CONFIG } from "./config";
 
 export const TEXTS = {
 	// Header
-	APP_NAME: "ImageProcessor",
+	APP_NAME: CONFIG.APP_NAME,
+	APP_DESCRIPTION: "画像トリミング・リサイズサービス",
 	NAV_QA: "QA",
 	NAV_HELP: "Help",
 
@@ -51,4 +52,12 @@ export const TEXTS = {
 	SIZE_INPUT_WIDTH_LABEL: "幅 (px)",
 	SIZE_INPUT_HEIGHT_LABEL: "高さ (px)",
 	SIZE_VALIDATION_ERROR: `画像サイズは${CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH}〜${CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}pxの範囲で指定してください`,
+
+	// Footer
+	FOOTER_NAV_TERMS: "利用規約",
+	FOOTER_NAV_PRIVACY: "プライバシーポリシー",
+	FOOTER_NAV_CONTACT: "お問い合わせ",
+	FOOTER_LANGUAGE_JP: "日本語",
+	FOOTER_LANGUAGE_EN: "English",
+	FOOTER_COPYRIGHT: `© 2025 ${CONFIG.APP_NAME}. All rights reserved.`,
 } as const;

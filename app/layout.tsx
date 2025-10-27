@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import AdBanner from "./components/AdBanner";
+import Footer from "./components/Footer";
 import "./globals.css";
+import { TEXTS } from "@/lib/constants/text";
 
 const inter = Inter({
 	variable: "--font-geist-sans",
@@ -10,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-	title: "ImageProcessor - 画像処理サービス",
-	description: "画像トリミング・リサイズサービス",
+	title: `${TEXTS.APP_NAME} - ${TEXTS.APP_DESCRIPTION}`,
+	description: TEXTS.APP_DESCRIPTION,
 };
 
 export default function RootLayout({
@@ -28,9 +30,10 @@ export default function RootLayout({
 				/>
 			</head>
 			<body
-				className={`${inter.variable} antialiased bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark`}
+				className={`${inter.variable} antialiased bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark flex flex-col min-h-screen`}
 			>
 				{children}
+				<Footer />
 				<AdBanner />
 			</body>
 		</html>
