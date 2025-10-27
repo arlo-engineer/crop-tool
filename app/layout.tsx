@@ -4,6 +4,7 @@ import AdBanner from "./components/AdBanner";
 import Footer from "./components/Footer";
 import "./globals.css";
 import { TEXTS } from "@/lib/constants/text";
+import Header from "./components/Header";
 
 const inter = Inter({
 	variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
 			<body
 				className={`${inter.variable} antialiased bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark flex flex-col min-h-screen`}
 			>
+				<Header />
 				{children}
 				<Footer />
 				<AdBanner />
