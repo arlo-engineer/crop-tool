@@ -2,244 +2,191 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## プロジェクト概要
+## Project Overview
 
-画像トリミング・リサイズサービス - Next.js 15 (App Router) で構築された、認証不要の画像処理 Web アプリケーション。最大 100 枚の画像を一括処理し、ユーザーが選択したサイス（デフォルトは 640×800px）にリサイズしてダウンロード可能。
+Batch image cropping and resizing service built with Next.js 15 (App Router). Processes up to 100 images at once with person detection (TensorFlow.js) and smart cropping, outputting to user-specified dimensions (default: 640×800px). No authentication required.
 
-**主要技術スタック:**
+**Tech Stack:** Next.js 15.5, TypeScript, Sharp (image processing), TensorFlow.js (person detection), Cloudflare R2 (storage), Supabase (metadata), Biome (linting).
 
-- Next.js 15.5.3 (App Router)
-- TypeScript
-- Sharp (サーバーサイド画像処理)
-- Cloudflare R2 (画像ストレージ)
-- Supabase (メタデータ管理)
-- Biome (Linter/Formatter)
+## Development Commands
 
-## 開発コマンド
+### Docker-based Development (Recommended)
 
 ```bash
-# 開発サーバー起動
-npm run dev
+# First-time setup: Build dev container and copy node_modules
+make init
 
-# 本番ビルド
-npm run build
+# Start development server + Supabase local instance
+make up
+# → http://localhost:3000 (app)
+# → http://localhost:54321 (Supabase Studio)
 
-# 本番サーバー起動
-npm run start
+# Stop development environment
+make down
 
-# Lintとフォーマット (Biome)
-npm run check
+# Run linter/formatter inside container
+make check
 
-# E2Eテスト実行 (Playwright)
+# Run E2E tests (Playwright)
 make test
 ```
 
-## 環境変数設定
-
-`.env.example`を参考に`.env.local`を作成:
+### Direct npm Commands (Alternative)
 
 ```bash
-APP_ENV=development  # または production
-
-# Cloudflare R2
-R2_ACCESS_KEY=your-access-key
-R2_SECRET_KEY=your-secret-key
-R2_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your-bucket-name
-
-# Supabase
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
+npm run dev       # Development server
+npm run build     # Production build
+npm run start     # Production server
+npm run check     # Biome lint & format
+npm run test:e2e  # Playwright E2E tests
 ```
 
-## アーキテクチャ
+## Architecture
 
-### 画像処理フロー
+### Image Processing Pipeline
 
 ```
-クライアント (最大100枚選択)
-    ↓
-Server Action: processImages() (1枚ずつ処理)
-    ↓
-Sharp処理 (リサイズ・クロップ)
-    ↓
-Cloudflare R2保存 (処理済み画像のみ)
-    ↓
-セッションキャッシュ蓄積
-    ↓
-flushImagesToDB() でSupabaseに一括保存
-    ↓
+Client (selects up to 100 images)
+    ↓ Chunks via createSmartChunks() (dynamic batch size)
+Server Action: processImages() → Promise.all() parallel processing
+    ↓ Sharp: crop + resize (per image)
+Upload to Cloudflare R2 (processed images only)
+    ↓ Accumulate in sessionCache (Map<sessionId, metadata[]>)
+Server Action: flushImagesToDB()
+    ↓ Bulk insert to Supabase
 Server Action: getMultipleSignedUrls()
-    ↓
-クライアントでZIP生成・ダウンロード
+    ↓ Generate R2 signed URLs (1hr expiry)
+Client: Download as ZIP
 ```
 
-### セッションキャッシュパターン
+**Key Architectural Decisions:**
 
-**重要:** DB への書き込み負荷を軽減するため、処理中はメモリキャッシュを使用し、全処理完了後に一括で Supabase に保存する。
+1. **Session Cache Pattern:** `lib/cache/sessionCache.ts` stores image metadata in memory during batch processing, then bulk-writes to Supabase via `flushImagesToDB()` to minimize DB writes.
 
-- **lib/cache/sessionCache.ts**: `Map<sessionId, UploadedImageMetadata[]>`でメタデータを一時保管
-- **app/actions/process.ts**:
-  - `processImages()`: 画像処理後、`sessionCache.addImage()`でキャッシュに追加
-  - `flushImagesToDB()`: 全処理完了後、キャッシュから Supabase へ一括保存
+2. **R2 Storage Path:** `{dev|prod}/sessions/{sessionId}/processed/{fileName}`
+   - Prefix auto-switches via `APP_ENV` environment variable
+   - Only processed images stored (not originals) to save costs
+   - Managed by `R2PathManager` in `lib/storage/r2-path.ts`
 
-### R2 ストレージ構成
+3. **Person Detection:** `lib/utils/personDetector.ts` uses COCO-SSD model
+   - When `crop.strategy: 'person'`, centers crop on detected person
+   - Auto-fallback to `'center'` strategy if detection fails
+   - Model cached in memory via `modelCache` singleton
 
-**パス構造:**
+4. **Server Action Constraints:**
+   - `next.config.ts` sets `serverActions.bodySizeLimit: "30mb"`
+   - Images sent in chunks via `createSmartChunks()` (dynamic batch sizing based on file sizes)
+   - Fallback: `createFixedChunks()` with `CHUNK_SIZE: 1` if smart chunking fails
+   - Each `processImages()` call processes its chunk in parallel via `Promise.all()`
 
-```
-{dev|prod}/sessions/{sessionId}/processed/{fileName}
-```
+### Database Schema (Supabase)
 
-**R2PathManager (lib/storage/r2-path.ts):**
+**images table:**
+- `session_id`: Groups images from same batch
+- `original_name`: Original filename
+- `processed_name`: Output filename (extension may change based on outputFormat)
+- `processed_r2_key`: R2 storage key
+- `status`: 'processing' | 'completed' | 'error'
+- `error_message`: Populated on processing failure
 
-- 環境変数`APP_ENV`で`dev`/`prod`を自動切り替え
-- セッション ID ごとにディレクトリを分離
-- オリジナル画像は保存せず、処理済み画像のみ保存してコスト削減
+**Migrations:** `supabase/migrations/*.sql` applied via `npx supabase@2.51.0 start` (runs automatically in `make up`)
 
-### データベース構造 (Supabase)
+### Module Responsibilities
 
-**images テーブル:**
+**Server Actions (`app/actions/`):**
+- `process.ts::processImages()`: Validates, processes (Sharp), uploads to R2, adds to cache
+- `process.ts::flushImagesToDB()`: Bulk saves cached metadata to Supabase
+- `download.ts::getMultipleSignedUrls()`: Generates R2 signed URLs for download
 
-```sql
-- id: uuid (Primary Key)
-- session_id: varchar (セッション識別子)
-- original_name: varchar (元ファイル名)
-- processed_name: varchar (処理後ファイル名) ※拡張子変更可能
-- processed_r2_key: text (R2キー)
-- status: varchar ('processing' | 'completed' | 'error')
-- error_message: text (エラー時のみ)
-- created_at, updated_at: timestamp
-```
+**Image Processing (`lib/utils/`):**
+- `imageProcessor.ts`: Core Sharp operations (resize, crop, metadata extraction)
+- `personDetector.ts`: TensorFlow.js COCO-SSD model integration
+- `thumbnailGenerator.ts`: Creates compressed thumbnails for UI preview
+- `chunkOptimizer.ts`: Calculates optimal batch sizes for processing
 
-## 主要モジュールの責務
-
-### Server Actions (app/actions/)
-
-**process.ts:**
-
-- `processImages(formData)`: FormData から画像を取得し、Sharp 処理後 R2 にアップロード
-  - ファイル検証 (MIME type, バッファ有効性)
-  - 出力フォーマット選択 (`original`の場合、元画像フォーマット維持)
-  - セッションキャッシュへメタデータ追加
-- `flushImagesToDB(sessionId)`: キャッシュから Supabase へ一括保存
-
-**download.ts:**
-
-- `getMultipleSignedUrls(sessionId)`: Supabase から画像メタデータ取得し、R2 の署名付き URL 生成 (1 時間有効)
-
-### 画像処理ユーティリティ (lib/utils/imageProcessor.ts)
-
-- `getImageMetadata(buffer)`: Sharp 経由でメタデータ取得
-- `validateImageBuffer(buffer)`: 画像バッファの有効性検証
-- `resizeImage(buffer, options)`: リサイズ + フォーマット変換
-- `cropImage(buffer, options)`: クロップ (`center`または`custom`戦略)
-- `processImage(buffer, options)`: クロップ → リサイズの統合処理
-
-### 設定 (lib/constants/config.ts)
-
+**Configuration (`lib/constants/config.ts`):**
 ```typescript
 CONFIG = {
-  CHUNK_SIZE: 1,
+  CHUNK_SIZE: 1,              // Fallback chunk size for createFixedChunks()
   MAX_FILES: 100,
-  MAX_FILE_SIZE: 4MB,
-  ALLOWED_MIME_TYPES: ['image/jpeg', 'image/png', ...],
+  MAX_FILE_SIZE: 4 * 1024 * 1024,  // 4MB
   IMAGE_PROCESSING: {
     DEFAULT_WIDTH: 640,
     DEFAULT_HEIGHT: 800,
     QUALITY: 85,
     FORMAT: 'jpeg',
-    CROP_STRATEGY: 'center',
-    RESIZE_FIT: 'cover',
+    CROP_STRATEGY: 'center',   // 'center' | 'custom' | 'person'
   }
 }
 ```
 
-## 重要な制約と仕様
+## Important Implementation Notes
 
-### Next.js サーバーアクション制約
+### Output Format Handling
 
-- **next.config.ts**で`serverActions.bodySizeLimit: "4mb"`設定済み
-- FormData で 1 枚ずつ送信して処理 (大量画像の同時処理を回避)
+When `outputFormat: 'original'`, preserves original image format (JPEG/PNG/WebP). Otherwise converts to specified format and updates file extension:
 
-### 出力フォーマット処理
-
-**拡張子変更機能:**
-
-- `outputFormat`が`"original"`の場合、元画像のフォーマット維持
-- それ以外 (`jpeg`, `png`, `webp`) の場合、指定フォーマットに変換
-- ファイル名の拡張子も自動変更: `processedFileName = file.name.replace(/\.[^/.]+$/, .${actualFormat})`
-
-### エラーハンドリング
-
-**processImages()のエラー時:**
-
-- 処理失敗した画像も`status: 'error'`としてセッションキャッシュに記録
-- フロントエンドでエラー内容を表示可能
-
-## コーディング規約
-
-- **Biome**を使用 (`npm run check`で自動フォーマット)
-- **コメントは英語、サービスとして表示される箇所は英語対応にスムーズに移行できるよう lib/constants/text.ts に日本語で記述したものを使用**
-- **型安全性:** 全て TypeScript で厳密な型定義を使用
-- **Server Actions:** `"use server"`ディレクティブ必須
-- **環境変数:** 起動時チェックで throw Error (lib/storage/r2.ts, lib/db/supabase.ts 参照)
-
-## 開発時の注意点
-
-### ローカル開発の Supabase 設定
-
-**マイグレーション適用:**
-
-```bash
-# Supabase CLIを使用している場合
-supabase db push
-
-# または手動でSQL実行
-# supabase/migrations/*.sql を順番に実行
+```typescript
+const actualFormat = outputFormat === 'original'
+  ? originalMetadata.format
+  : outputFormat;
+const processedFileName = file.name.replace(/\.[^/.]+$/, `.${actualFormat}`);
 ```
 
-### R2 バケット設定
+### TensorFlow.js Webpack Configuration
 
-- `APP_ENV`環境変数で自動的に`dev`/`prod`パスを切り替え
-- ローカル開発時は`APP_ENV=development`を推奨
+`next.config.ts` externalizes TensorFlow.js for server-side usage:
 
-### パフォーマンス考慮事項
-
-- **Sharp 処理:** サーバーメモリ消費に注意 (Vercel の 1024MB 制限)
-- **R2 アップロード:** `Promise.all()`で並列処理済み
-- **セッションキャッシュ:** 長時間保持を避け、`flushImagesToDB()`で定期的にクリア
-
-## テスト
-
-### E2E テスト (Playwright)
-
-**テスト対象:**
-
-- 主要な画像処理フロー（画像アップロード → 処理 → ZIP ダウンロード → 検証）
-- 画像サイズ検証（640×800）
-- 人物検知機能と中央配置の検証
-
-**実行方法:**
-
-```bash
-make test
+```typescript
+webpack: (config, { isServer }) => {
+  if (isServer) {
+    config.externals.push({
+      '@tensorflow/tfjs-node': 'commonjs @tensorflow/tfjs-node',
+    });
+  }
+  return config;
+}
 ```
 
-**テストファイル:**
+### Environment Variables
 
-- `tests/e2e/main-flow.spec.ts`: メインフローの E2E テスト
-- `tests/helpers/zipValidator.ts`: ZIP 検証ヘルパー関数
-- `tests/fixtures/`: テスト用画像ファイル
+Required in `.env.local`:
+```bash
+APP_ENV=development        # or 'production' (controls R2 path prefix)
+R2_ACCESS_KEY=...
+R2_SECRET_KEY=...
+R2_ENDPOINT=https://....r2.cloudflarestorage.com
+R2_BUCKET_NAME=...
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+```
 
-**重要:** Playwright のブラウザと依存関係は`Dockerfile`の`deps`ステージで自動的にインストールされる。手動セットアップは不要。
+Both `lib/storage/r2.ts` and `lib/db/supabase.ts` throw errors at startup if credentials missing.
 
-詳細は `docs/TODO.md` のフェーズ 0 を参照。
+## Code Style
 
-## 今後の拡張予定
+- **Biome formatter:** Tab indentation, double quotes (`biome.json`)
+- **Comments:** English only
+- **UI text:** Use constants from `lib/constants/text.ts` (currently Japanese, designed for easy i18n)
+- **Type safety:** Strict TypeScript, all functions explicitly typed
+- **Server Actions:** Must use `"use server"` directive
 
-プロジェクトルートの詳細設計書を参照:
+## Testing
 
-- **人物検知機能 (TensorFlow.js):** `lib/utils/personDetector.ts`実装済み
-- **person 戦略:** 人物を中心に配置したクロップ実装済み
-- **自動フォールバック:** 人物検知失敗時は`center`戦略へフォールバック実装済み
+**E2E Tests (Playwright):**
+- Test directory: `tests/e2e/`
+- Fixtures: `tests/fixtures/` (sample images for testing)
+- Test helpers: `tests/helpers/zipValidator.ts` (validates ZIP structure and image dimensions)
+- Configuration: `playwright.config.ts` (timeout: 180s, workers: 1, no parallel execution)
+
+**Key test scenarios:**
+- Full flow: upload → process → download ZIP → validate dimensions
+- Person detection with center-crop fallback
+- Output format conversion (JPEG/PNG/WebP)
+
+## Performance Considerations
+
+- **Sharp memory usage:** Each image processed server-side (watch memory limits on deployment platforms)
+- **R2 uploads:** Already parallelized via `Promise.all()` in upload functions
+- **Session cache:** Clear via `flushImagesToDB()` after batch completion to avoid memory leaks
+- **TensorFlow.js model:** Lazy-loaded and cached; first detection slower due to model download

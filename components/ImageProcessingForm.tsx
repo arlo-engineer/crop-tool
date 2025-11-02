@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { getMultipleSignedUrls } from "@/app/actions/download";
 import { flushImagesToDB, processImages } from "@/app/actions/process";
-import Header from "@/app/components/Header";
 import HeroSection from "@/app/components/HeroSection";
 import ImageGrid from "@/app/components/ImageGrid";
 import ImageUploadZone from "@/app/components/ImageUploadZone";
@@ -132,7 +131,6 @@ export default function ImageProcessingForm() {
 
 	return (
 		<div className="relative flex min-h-screen w-full flex-col items-center overflow-x-hidden p-4 sm:p-6 md:p-8">
-			<Header />
 			<HeroSection />
 			<div className="layout-container flex h-full w-full max-w-5xl grow flex-col gap-8">
 				<ImageUploadZone
