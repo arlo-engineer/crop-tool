@@ -1,13 +1,12 @@
 import { TEXTS } from "@/lib/constants/text";
+import Image from "next/image";
 
 export default function Header() {
 	return (
 		<header className="w-full max-w-5xl mb-8">
 			<div className="flex justify-between items-center h-14">
 				<div className="flex items-center gap-2">
-					<span className="material-symbols-outlined text-3xl text-primary">
-						auto_awesome_mosaic
-					</span>
+					<Image src="/logo.svg" alt="Logo" width={24} height={24} />
 					<span className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark">
 						{TEXTS.APP_NAME}
 					</span>

@@ -2,7 +2,7 @@ import { CONFIG } from "./config";
 
 export const TEXTS = {
 	// Header
-	APP_NAME: "ImageProcessor",
+	APP_NAME: "Percen",
 	NAV_QA: "QA",
 	NAV_HELP: "Help",
 
