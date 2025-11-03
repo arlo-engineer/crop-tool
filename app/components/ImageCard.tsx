@@ -43,10 +43,10 @@ export default function ImageCard({
 						priority={false}
 					/>
 				) : (
-					<div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+					<div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
 				)}
 			</div>
-			<p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium leading-normal truncate">
+			<p className="text-text-secondary text-sm font-medium leading-normal truncate">
 				{fileName}
 			</p>
 		</div>

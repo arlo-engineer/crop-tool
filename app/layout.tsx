@@ -31,7 +31,7 @@ export default function RootLayout({
 				/>
 			</head>
 			<body
-				className={`${inter.variable} antialiased bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark flex flex-col min-h-screen`}
+				className={`${inter.variable} antialiased bg-background text-text-primary flex flex-col min-h-screen`}
 			>
 				<Header />
 				{children}

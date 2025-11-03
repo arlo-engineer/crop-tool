@@ -4,14 +4,9 @@
 	--background: #ffffff;
 	--foreground: #171717;
 	--primary: #4a90e2;
-	--background-light: #ffffff;
-	--background-dark: #101922;
-	--text-primary-light: #333333;
-	--text-secondary-light: #888888;
-	--border-light: #e8e8e8;
-	--text-primary-dark: #f0f0f0;
-	--text-secondary-dark: #888888;
-	--border-dark: #333333;
+	--text-primary: #333333;
+	--text-secondary: #888888;
+	--border: #e8e8e8;
 	--status-success: #2ecc71;
 	--status-warning: #f39c12;
 }
@@ -20,14 +15,9 @@
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-primary: var(--primary);
-	--color-background-light: var(--background-light);
-	--color-background-dark: var(--background-dark);
-	--color-text-primary-light: var(--text-primary-light);
-	--color-text-secondary-light: var(--text-secondary-light);
-	--color-border-light: var(--border-light);
-	--color-text-primary-dark: var(--text-primary-dark);
-	--color-text-secondary-dark: var(--text-secondary-dark);
-	--color-border-dark: var(--border-dark);
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-border: var(--border);
 	--color-status-success: var(--status-success);
 	--color-status-warning: var(--status-warning);
 	--font-sans: var(--font-geist-sans);
@@ -35,13 +25,6 @@
 	--radius: 0.5rem;
 	--radius-lg: 0.5rem;
 	--radius-xl: 0.75rem;
-}
-
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
 }
 
 body {

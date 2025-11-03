@@ -38,14 +38,14 @@ export default function ProcessingControls({
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
-				<h2 className="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em]">
+				<h2 className="text-text-primary text-lg font-bold leading-tight tracking-[-0.015em]">
 					{imageCount} / {maxCount}
 					{TEXTS.IMAGE_COUNT_LABEL}
 				</h2>
 				<div className="flex flex-col sm:flex-row items-center gap-4">
 					<div className="flex items-center gap-2">
 						<input
-							className="w-28 text-sm text-center rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:ring-primary focus:border-primary px-3 py-2"
+							className="w-28 text-sm text-center rounded-lg border border-border bg-background focus:ring-primary focus:border-primary px-3 py-2"
 							type="number"
 							value={width}
 							onChange={(e) => onWidthChange(Number(e.target.value))}
@@ -53,11 +53,9 @@ export default function ProcessingControls({
 							max={CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}
 							disabled={disabled || isProcessing}
 						/>
-						<span className="text-text-secondary-light dark:text-text-secondary-dark">
-							x
-						</span>
+						<span className="text-text-secondary">x</span>
 						<input
-							className="w-28 text-sm text-center rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:ring-primary focus:border-primary px-3 py-2"
+							className="w-28 text-sm text-center rounded-lg border border-border bg-background focus:ring-primary focus:border-primary px-3 py-2"
 							type="number"
 							value={height}
 							onChange={(e) => onHeightChange(Number(e.target.value))}
@@ -68,7 +66,7 @@ export default function ProcessingControls({
 					</div>
 					<div className="flex items-center">
 						<select
-							className="w-40 text-sm text-center rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark focus:ring-primary focus:border-primary dark:text-text-primary-dark px-3 py-2"
+							className="w-40 text-sm text-center rounded-lg border border-border bg-background focus:ring-primary focus:border-primary text-text-primary px-3 py-2"
 							value={outputFormat}
 							onChange={(e) => onFormatChange(e.target.value as OutputFormat)}
 							disabled={disabled || isProcessing}
@@ -85,7 +83,7 @@ export default function ProcessingControls({
 						type="button"
 						onClick={onProcessStart}
 						disabled={disabled || isProcessing || imageCount === 0}
-						className="flex w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-border-light dark:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+						className="flex w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-border text-text-secondary text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<span className="truncate">{TEXTS.PROCESS_START_BUTTON}</span>
 					</button>

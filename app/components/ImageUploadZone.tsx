@@ -50,7 +50,7 @@ export default function ImageUploadZone({
 
 	return (
 		<label
-			className={`flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-border-light dark:border-border-dark px-6 py-14 sm:py-16 md:py-18 lg:py-20 w-full max-w-3xl mx-auto shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.05),0_2px_4px_-2px_rgb(0_0_0_/_0.05)] ${
+			className={`flex flex-col items-center gap-6 rounded-lg border-2 border-dashed border-border px-6 py-14 sm:py-16 md:py-18 lg:py-20 w-full max-w-3xl mx-auto shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.05),0_2px_4px_-2px_rgb(0_0_0_/_0.05)] ${
 				isDragging ? "bg-primary/10 border-primary" : ""
 			} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} transition-all`}
 			onDragOver={handleDragOver}
@@ -58,18 +58,18 @@ export default function ImageUploadZone({
 			onDrop={handleDrop}
 		>
 			<div className="flex max-w-md flex-col items-center gap-4 text-center">
-				<span className="material-symbols-outlined text-5xl text-text-secondary-light dark:text-text-secondary-dark">
+				<span className="material-symbols-outlined text-5xl text-text-secondary">
 					cloud_upload
 				</span>
-				<p className="text-xl font-bold leading-tight tracking-[-0.015em] text-text-primary-light dark:text-text-primary-dark">
+				<p className="text-xl font-bold leading-tight tracking-[-0.015em] text-text-primary">
 					{TEXTS.UPLOAD_TITLE}
 				</p>
-				<p className="text-sm font-normal leading-normal text-text-secondary-light dark:text-text-secondary-dark">
+				<p className="text-sm font-normal leading-normal text-text-secondary">
 					{TEXTS.UPLOAD_MAX_FILES}
 				</p>
 			</div>
-			<div className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-border-light dark:bg-border-dark px-4">
-				<p className="text-sm font-medium leading-normal text-text-secondary-light dark:text-text-secondary-dark">
+			<div className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-border px-4">
+				<p className="text-sm font-medium leading-normal text-text-secondary">
 					{TEXTS.UPLOAD_SUPPORTED_FORMATS}
 				</p>
 			</div>
