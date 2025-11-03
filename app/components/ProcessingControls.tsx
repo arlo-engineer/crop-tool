@@ -83,7 +83,7 @@ export default function ProcessingControls({
 						type="button"
 						onClick={onProcessStart}
 						disabled={disabled || isProcessing || imageCount === 0}
-						className="flex w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-border text-text-secondary text-base font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+						className="flex w-full sm:w-auto cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] shadow-[0_4px_6px_-1px_rgb(0_0_0_/_0.05),0_2px_4px_-2px_rgb(0_0_0_/_0.05)] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<span className="truncate">{TEXTS.PROCESS_START_BUTTON}</span>
 					</button>
