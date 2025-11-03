@@ -130,7 +130,7 @@ export default function ImageProcessingForm() {
 	};
 
 	return (
-		<div className="relative flex min-h-screen w-full flex-col items-center overflow-x-hidden p-4 sm:p-6 md:p-8">
+		<div className="relative flex w-full flex-col items-center overflow-x-hidden p-4 sm:p-6 md:p-8">
 			<HeroSection />
 			<div className="layout-container flex h-full w-full max-w-5xl grow flex-col gap-8">
 				<ImageUploadZone
