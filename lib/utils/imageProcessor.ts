@@ -67,7 +67,7 @@ export async function resizeImage(
 		format = CONFIG.IMAGE_PROCESSING.FORMAT,
 	} = options;
 
-	let sharpInstance = sharp(buffer).resize(width, height, { fit });
+	let sharpInstance = sharp(buffer).rotate().resize(width, height, { fit });
 
 	switch (format) {
 		case "jpeg":
@@ -90,11 +90,12 @@ export async function cropImage(
 ): Promise<Buffer> {
 	const { width, height } = options;
 
-	let sharpInstance = sharp(buffer);
-	const metadata = await getImageMetadata(buffer);
+	const rotatedBuffer = await sharp(buffer).rotate().toBuffer();
+	let sharpInstance = sharp(rotatedBuffer);
+	const metadata = await getImageMetadata(rotatedBuffer);
 
 	const personResult = await detectPerson(
-		buffer,
+		rotatedBuffer,
 		CONFIG.PERSON_DETECTION.MIN_SCORE,
 	);
 
