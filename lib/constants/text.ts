@@ -53,6 +53,10 @@ export const TEXTS = {
 	SIZE_INPUT_HEIGHT_LABEL: "高さ (px)",
 	SIZE_VALIDATION_ERROR: `画像サイズは${CONFIG.IMAGE_SIZE_LIMITS.MIN_WIDTH}〜${CONFIG.IMAGE_SIZE_LIMITS.MAX_WIDTH}pxの範囲で指定してください`,
 
+	// Image Grid
+	IMAGE_GRID_SHOW_MORE: "もっと見る",
+	IMAGE_GRID_SHOW_LESS: "閉じる",
+
 	// Footer
 	FOOTER_NAV_TERMS: "利用規約",
 	FOOTER_NAV_PRIVACY: "プライバシーポリシー",
